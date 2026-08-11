@@ -407,27 +407,26 @@ Shader "Hidden/VRCFury/SpsDebugCachedSlotTable" {
                 };
                 uint count = sps_debug_direct_collect(tex, SPS_DEBUG_PRODUCT_ANY, panelWorld, limit, records);
                 uint first = display_start_index(count, rows);
+                uint dataRows = count > first ? min(rows, count - first) : 0u;
 
                 emit_table_band(0u, TABLE_FIRST_ROW, -1, -1, count, first, stream);
 
                 [loop]
                 for (uint visibleIndex = 0u; visibleIndex < 28u; visibleIndex++) {
-                    if (visibleIndex >= rows) break;
-                    int slot = -1;
+                    if (visibleIndex >= dataRows) break;
                     uint recordIndex = first + visibleIndex;
-                    if (recordIndex < count) slot = (int)records[recordIndex].slot;
                     emit_table_band(
                         TABLE_FIRST_ROW + visibleIndex,
                         1u,
                         (int)(TABLE_FIRST_ROW + visibleIndex),
-                        slot,
+                        (int)records[recordIndex].slot,
                         count,
                         first,
                         stream
                     );
                 }
 
-                uint bottomFirstRow = TABLE_FIRST_ROW + rows;
+                uint bottomFirstRow = TABLE_FIRST_ROW + dataRows;
                 if (bottomFirstRow < PANEL_ROWS) {
                     emit_table_band(bottomFirstRow, PANEL_ROWS - bottomFirstRow, -2, -1, count, first, stream);
                 }
@@ -440,10 +439,18 @@ Shader "Hidden/VRCFury/SpsDebugCachedSlotTable" {
                 int col = (int)floor(grid.x);
                 int row = (int)floor(grid.y);
                 uint rows = visible_row_count();
+                uint dataRows = input.displayCount > input.displayStart
+                    ? min(rows, input.displayCount - input.displayStart)
+                    : 0u;
                 if (panelUv.x < 0.0 || panelUv.x > 1.0 || panelUv.y < 0.0 || panelUv.y > 1.0) clip(-1);
                 if (input.layerRow >= 0 && row != input.layerRow) clip(-1);
                 if (input.layerRow == -1 && row >= TABLE_FIRST_ROW) clip(-1);
-                if (input.layerRow == -2 && row < TABLE_FIRST_ROW + (int)rows) clip(-1);
+                if (input.layerRow == -2) {
+                    if (row < TABLE_FIRST_ROW + (int)dataRows) clip(-1);
+                    float4 bg = _SPS_DebugBackColor;
+                    bg.a *= _SPS_DebugOpacity;
+                    return bg;
+                }
                 if (!possible_text_cell(row, col)) {
                     float4 bg = _SPS_DebugBackColor;
                     bg.a *= _SPS_DebugOpacity;
