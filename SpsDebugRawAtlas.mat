@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: SpsDebugRawAtlas
+  m_Shader: {fileID: 4800000, guid: ab4e6bc4fb48478e878a009aaf75e496, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords:
+  - _SPS_DEBUGFLIPY_ON
+  - _SPS_DEBUGLEFTEYEONLY_ON
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: 2000
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _BlendOp: 0
+    - _Cull: 0
+    - _DstBlend: 0
+    - _SPS_DebugFlipX: 0
+    - _SPS_DebugFlipY: 1
+    - _SPS_DebugLeftEyeOnly: 1
+    - _SPS_DebugOpacity: 1
+    - _SPS_DebugRotation: 0
+    - _SPS_DebugSolidBack: 0
+    - _SPS_DebugSource: 0
+    - _SrcBlend: 1
+    - _ZTest: 4
+    - _ZWrite: 1
+    m_Colors:
+    - _SPS_DebugBackColor: {r: 0.015, g: 0.02, b: 0.025, a: 1}
+  m_BuildTextureStacks: []

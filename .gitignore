@@ -1,0 +1,23 @@
+# Avatar-specific and experimental assets
+/old/
+/old.meta
+/tags/
+/tags.meta
+/OptimizedShaders/
+/OptimizedShaders.meta
+
+# Avatar animation assets
+*.anim
+*.anim.meta
+*.controller
+*.controller.meta
+*.overrideController
+*.overrideController.meta
+*.mask
+*.mask.meta
+*.playable
+*.playable.meta
+
+# Local tooling
+/.agents/
+

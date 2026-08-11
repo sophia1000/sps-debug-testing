@@ -1,0 +1,606 @@
+SPS debug cell pixel map reference
+==================================
+
+Coordinate convention
+- Rows below are 1-based top-to-bottom: Row 01 is y=0, Row 16 is y=15.
+- Pixels are 1-based left-to-right: P01 is x=0, P16 is x=15.
+- Each SPS cell is 16x16 pixels. Linear index = y * 16 + x.
+- Payload index = linear index - 16 for rows after the top header.
+- Header/magic checks run before payload checks. Bottom row header values are real data, not blank.
+- The dictionary cell at cell index -1 is separate and is not shown here.
+
+Sources scanned
+- Packages/com.vrcfury.vrcfury/SPS/common/sps_cell_layout.cginc
+- Packages/com.vrcfury.vrcfury/SPS/socket/sps_socket.shader
+- Packages/com.vrcfury.vrcfury/SPS/socket/sps_socket_frag.cginc
+- Packages/com.vrcfury.vrcfury/SPS/resolver/sps_resolver_frag.cginc
+- Packages/com.vrcfury.vrcfury/SPS/resolver/sps_resolver_payload.cginc
+- Packages/com.vrcfury.vrcfury/SPS/resolver/sps_resolver_read.cginc
+- Packages/com.vrcfury.vrcfury/SPS/common/sps_types.cginc
+
+Important correction
+- Socket/orifice row 16 P02-P11 stores world/forward/up/scale header data.
+- Plug/penetrator row 15 P01-P16 stores resolver radius samples.
+- Plug/penetrator row 16 P02-P11 stores world/forward/up/scale header data.
+- Plug/penetrator rows 07 P06 through 13 P16, and row 14 P09-P16, are explicit resolver zero gap pixels, not unclassified unknowns.
+
+ORIFICE / SOCKET CELL (SPS_PRODUCT_SOCKET = 1)
+----------------------------------------------
+Row 01 (y=0)
+  P01 [x=0, y=0, index 0] = MAGIC TL - Cell magic corner 0: SPS_CELL_MAGIC_0 = float4(1,0,0,1).
+  P02 [x=1, y=0, index 1] = VENDOR - Header vendor uint. SPS writes SPS_VENDOR_SPS = 1.
+  P03 [x=2, y=0, index 2] = PRODUCT - Header product uint. Socket/orifice = 1, plug/resolver/penetrator = 2.
+  P04 [x=3, y=0, index 3] = VERSION - Header version uint. SPS_VERSION_SPS = 1.
+  P05 [x=4, y=0, index 4] = UNIQUE ID - Header unique id uint for this SPS instance.
+  P06 [x=5, y=0, index 5] = PLAYER ID - Header player id uint. 0 if not player-specific.
+  P07 [x=6, y=0, index 6] = DEBUG RGBA - Header debug raw rgba. Socket writes 0; resolver writes input.debug.
+  P08 [x=7, y=0, index 7] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P09 [x=8, y=0, index 8] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P10 [x=9, y=0, index 9] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P11 [x=10, y=0, index 10] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P12 [x=11, y=0, index 11] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P13 [x=12, y=0, index 12] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P14 [x=13, y=0, index 13] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P15 [x=14, y=0, index 14] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P16 [x=15, y=0, index 15] = MAGIC TR - Cell magic corner 1: SPS_CELL_MAGIC_1 = float4(0,1,0,1).
+
+Row 02 (y=1)
+  P01 [x=0, y=1, index 16, payload 0] = FLAGS - Socket flags uint. Bits: 1 hole, 2 double sided, 4 portal, 8 radius offset, 16 unlock local X, 32 unlock all.
+  P02 [x=1, y=1, index 17, payload 1] = NEXT ID - Guided target/next id uint from _SPS_GuidedTargetId.
+  P03 [x=2, y=1, index 18, payload 2] = TAG1 - Socket tag 1 uint.
+  P04 [x=3, y=1, index 19, payload 3] = TAG2 - Socket tag 2 uint.
+  P05 [x=4, y=1, index 20, payload 4] = TAG3 - Socket tag 3 uint.
+  P06 [x=5, y=1, index 21, payload 5] = TAG4 - Socket tag 4 uint.
+  P07 [x=6, y=1, index 22, payload 6] = TAG5 - Socket tag 5 uint.
+  P08 [x=7, y=1, index 23, payload 7] = TAG6 - Socket tag 6 uint.
+  P09 [x=8, y=1, index 24, payload 8] = TAG7 - Socket tag 7 uint.
+  P10 [x=9, y=1, index 25, payload 9] = TAG8 - Socket tag 8 uint.
+  P11 [x=10, y=1, index 26, payload 10] = TIN X - Socket tangent-in X float. 0 if tangent-in disabled.
+  P12 [x=11, y=1, index 27, payload 11] = TIN Y - Socket tangent-in Y float. 0 if tangent-in disabled.
+  P13 [x=12, y=1, index 28, payload 12] = TIN Z - Socket tangent-in Z float. 0 if tangent-in disabled.
+  P14 [x=13, y=1, index 29, payload 13] = TOUT X - Socket tangent-out X float. 0 if tangent-out disabled.
+  P15 [x=14, y=1, index 30, payload 14] = TOUT Y - Socket tangent-out Y float. 0 if tangent-out disabled.
+  P16 [x=15, y=1, index 31, payload 15] = TOUT Z - Socket tangent-out Z float. 0 if tangent-out disabled.
+
+Row 03 (y=2)
+  P01 [x=0, y=2, index 32, payload 16] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P02 [x=1, y=2, index 33, payload 17] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P03 [x=2, y=2, index 34, payload 18] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P04 [x=3, y=2, index 35, payload 19] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P05 [x=4, y=2, index 36, payload 20] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P06 [x=5, y=2, index 37, payload 21] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P07 [x=6, y=2, index 38, payload 22] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P08 [x=7, y=2, index 39, payload 23] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P09 [x=8, y=2, index 40, payload 24] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P10 [x=9, y=2, index 41, payload 25] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P11 [x=10, y=2, index 42, payload 26] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P12 [x=11, y=2, index 43, payload 27] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P13 [x=12, y=2, index 44, payload 28] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P14 [x=13, y=2, index 45, payload 29] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P15 [x=14, y=2, index 46, payload 30] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P16 [x=15, y=2, index 47, payload 31] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+
+Row 04 (y=3)
+  P01 [x=0, y=3, index 48, payload 32] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P02 [x=1, y=3, index 49, payload 33] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P03 [x=2, y=3, index 50, payload 34] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P04 [x=3, y=3, index 51, payload 35] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P05 [x=4, y=3, index 52, payload 36] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P06 [x=5, y=3, index 53, payload 37] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P07 [x=6, y=3, index 54, payload 38] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P08 [x=7, y=3, index 55, payload 39] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P09 [x=8, y=3, index 56, payload 40] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P10 [x=9, y=3, index 57, payload 41] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P11 [x=10, y=3, index 58, payload 42] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P12 [x=11, y=3, index 59, payload 43] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P13 [x=12, y=3, index 60, payload 44] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P14 [x=13, y=3, index 61, payload 45] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P15 [x=14, y=3, index 62, payload 46] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P16 [x=15, y=3, index 63, payload 47] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+
+Row 05 (y=4)
+  P01 [x=0, y=4, index 64, payload 48] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P02 [x=1, y=4, index 65, payload 49] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P03 [x=2, y=4, index 66, payload 50] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P04 [x=3, y=4, index 67, payload 51] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P05 [x=4, y=4, index 68, payload 52] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P06 [x=5, y=4, index 69, payload 53] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P07 [x=6, y=4, index 70, payload 54] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P08 [x=7, y=4, index 71, payload 55] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P09 [x=8, y=4, index 72, payload 56] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P10 [x=9, y=4, index 73, payload 57] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P11 [x=10, y=4, index 74, payload 58] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P12 [x=11, y=4, index 75, payload 59] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P13 [x=12, y=4, index 76, payload 60] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P14 [x=13, y=4, index 77, payload 61] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P15 [x=14, y=4, index 78, payload 62] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P16 [x=15, y=4, index 79, payload 63] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+
+Row 06 (y=5)
+  P01 [x=0, y=5, index 80, payload 64] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P02 [x=1, y=5, index 81, payload 65] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P03 [x=2, y=5, index 82, payload 66] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P04 [x=3, y=5, index 83, payload 67] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P05 [x=4, y=5, index 84, payload 68] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P06 [x=5, y=5, index 85, payload 69] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P07 [x=6, y=5, index 86, payload 70] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P08 [x=7, y=5, index 87, payload 71] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P09 [x=8, y=5, index 88, payload 72] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P10 [x=9, y=5, index 89, payload 73] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P11 [x=10, y=5, index 90, payload 74] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P12 [x=11, y=5, index 91, payload 75] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P13 [x=12, y=5, index 92, payload 76] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P14 [x=13, y=5, index 93, payload 77] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P15 [x=14, y=5, index 94, payload 78] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P16 [x=15, y=5, index 95, payload 79] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+
+Row 07 (y=6)
+  P01 [x=0, y=6, index 96, payload 80] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P02 [x=1, y=6, index 97, payload 81] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P03 [x=2, y=6, index 98, payload 82] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P04 [x=3, y=6, index 99, payload 83] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P05 [x=4, y=6, index 100, payload 84] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P06 [x=5, y=6, index 101, payload 85] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P07 [x=6, y=6, index 102, payload 86] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P08 [x=7, y=6, index 103, payload 87] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P09 [x=8, y=6, index 104, payload 88] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P10 [x=9, y=6, index 105, payload 89] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P11 [x=10, y=6, index 106, payload 90] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P12 [x=11, y=6, index 107, payload 91] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P13 [x=12, y=6, index 108, payload 92] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P14 [x=13, y=6, index 109, payload 93] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P15 [x=14, y=6, index 110, payload 94] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P16 [x=15, y=6, index 111, payload 95] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+
+Row 08 (y=7)
+  P01 [x=0, y=7, index 112, payload 96] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P02 [x=1, y=7, index 113, payload 97] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P03 [x=2, y=7, index 114, payload 98] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P04 [x=3, y=7, index 115, payload 99] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P05 [x=4, y=7, index 116, payload 100] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P06 [x=5, y=7, index 117, payload 101] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P07 [x=6, y=7, index 118, payload 102] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P08 [x=7, y=7, index 119, payload 103] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P09 [x=8, y=7, index 120, payload 104] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P10 [x=9, y=7, index 121, payload 105] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P11 [x=10, y=7, index 122, payload 106] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P12 [x=11, y=7, index 123, payload 107] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P13 [x=12, y=7, index 124, payload 108] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P14 [x=13, y=7, index 125, payload 109] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P15 [x=14, y=7, index 126, payload 110] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P16 [x=15, y=7, index 127, payload 111] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+
+Row 09 (y=8)
+  P01 [x=0, y=8, index 128, payload 112] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P02 [x=1, y=8, index 129, payload 113] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P03 [x=2, y=8, index 130, payload 114] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P04 [x=3, y=8, index 131, payload 115] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P05 [x=4, y=8, index 132, payload 116] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P06 [x=5, y=8, index 133, payload 117] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P07 [x=6, y=8, index 134, payload 118] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P08 [x=7, y=8, index 135, payload 119] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P09 [x=8, y=8, index 136, payload 120] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P10 [x=9, y=8, index 137, payload 121] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P11 [x=10, y=8, index 138, payload 122] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P12 [x=11, y=8, index 139, payload 123] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P13 [x=12, y=8, index 140, payload 124] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P14 [x=13, y=8, index 141, payload 125] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P15 [x=14, y=8, index 142, payload 126] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P16 [x=15, y=8, index 143, payload 127] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+
+Row 10 (y=9)
+  P01 [x=0, y=9, index 144, payload 128] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P02 [x=1, y=9, index 145, payload 129] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P03 [x=2, y=9, index 146, payload 130] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P04 [x=3, y=9, index 147, payload 131] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P05 [x=4, y=9, index 148, payload 132] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P06 [x=5, y=9, index 149, payload 133] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P07 [x=6, y=9, index 150, payload 134] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P08 [x=7, y=9, index 151, payload 135] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P09 [x=8, y=9, index 152, payload 136] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P10 [x=9, y=9, index 153, payload 137] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P11 [x=10, y=9, index 154, payload 138] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P12 [x=11, y=9, index 155, payload 139] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P13 [x=12, y=9, index 156, payload 140] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P14 [x=13, y=9, index 157, payload 141] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P15 [x=14, y=9, index 158, payload 142] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P16 [x=15, y=9, index 159, payload 143] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+
+Row 11 (y=10)
+  P01 [x=0, y=10, index 160, payload 144] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P02 [x=1, y=10, index 161, payload 145] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P03 [x=2, y=10, index 162, payload 146] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P04 [x=3, y=10, index 163, payload 147] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P05 [x=4, y=10, index 164, payload 148] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P06 [x=5, y=10, index 165, payload 149] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P07 [x=6, y=10, index 166, payload 150] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P08 [x=7, y=10, index 167, payload 151] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P09 [x=8, y=10, index 168, payload 152] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P10 [x=9, y=10, index 169, payload 153] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P11 [x=10, y=10, index 170, payload 154] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P12 [x=11, y=10, index 171, payload 155] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P13 [x=12, y=10, index 172, payload 156] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P14 [x=13, y=10, index 173, payload 157] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P15 [x=14, y=10, index 174, payload 158] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P16 [x=15, y=10, index 175, payload 159] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+
+Row 12 (y=11)
+  P01 [x=0, y=11, index 176, payload 160] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P02 [x=1, y=11, index 177, payload 161] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P03 [x=2, y=11, index 178, payload 162] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P04 [x=3, y=11, index 179, payload 163] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P05 [x=4, y=11, index 180, payload 164] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P06 [x=5, y=11, index 181, payload 165] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P07 [x=6, y=11, index 182, payload 166] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P08 [x=7, y=11, index 183, payload 167] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P09 [x=8, y=11, index 184, payload 168] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P10 [x=9, y=11, index 185, payload 169] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P11 [x=10, y=11, index 186, payload 170] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P12 [x=11, y=11, index 187, payload 171] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P13 [x=12, y=11, index 188, payload 172] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P14 [x=13, y=11, index 189, payload 173] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P15 [x=14, y=11, index 190, payload 174] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P16 [x=15, y=11, index 191, payload 175] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+
+Row 13 (y=12)
+  P01 [x=0, y=12, index 192, payload 176] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P02 [x=1, y=12, index 193, payload 177] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P03 [x=2, y=12, index 194, payload 178] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P04 [x=3, y=12, index 195, payload 179] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P05 [x=4, y=12, index 196, payload 180] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P06 [x=5, y=12, index 197, payload 181] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P07 [x=6, y=12, index 198, payload 182] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P08 [x=7, y=12, index 199, payload 183] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P09 [x=8, y=12, index 200, payload 184] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P10 [x=9, y=12, index 201, payload 185] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P11 [x=10, y=12, index 202, payload 186] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P12 [x=11, y=12, index 203, payload 187] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P13 [x=12, y=12, index 204, payload 188] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P14 [x=13, y=12, index 205, payload 189] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P15 [x=14, y=12, index 206, payload 190] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P16 [x=15, y=12, index 207, payload 191] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+
+Row 14 (y=13)
+  P01 [x=0, y=13, index 208, payload 192] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P02 [x=1, y=13, index 209, payload 193] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P03 [x=2, y=13, index 210, payload 194] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P04 [x=3, y=13, index 211, payload 195] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P05 [x=4, y=13, index 212, payload 196] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P06 [x=5, y=13, index 213, payload 197] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P07 [x=6, y=13, index 214, payload 198] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P08 [x=7, y=13, index 215, payload 199] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P09 [x=8, y=13, index 216, payload 200] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P10 [x=9, y=13, index 217, payload 201] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P11 [x=10, y=13, index 218, payload 202] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P12 [x=11, y=13, index 219, payload 203] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P13 [x=12, y=13, index 220, payload 204] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P14 [x=13, y=13, index 221, payload 205] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P15 [x=14, y=13, index 222, payload 206] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P16 [x=15, y=13, index 223, payload 207] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+
+Row 15 (y=14)
+  P01 [x=0, y=14, index 224, payload 208] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P02 [x=1, y=14, index 225, payload 209] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P03 [x=2, y=14, index 226, payload 210] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P04 [x=3, y=14, index 227, payload 211] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P05 [x=4, y=14, index 228, payload 212] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P06 [x=5, y=14, index 229, payload 213] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P07 [x=6, y=14, index 230, payload 214] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P08 [x=7, y=14, index 231, payload 215] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P09 [x=8, y=14, index 232, payload 216] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P10 [x=9, y=14, index 233, payload 217] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P11 [x=10, y=14, index 234, payload 218] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P12 [x=11, y=14, index 235, payload 219] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P13 [x=12, y=14, index 236, payload 220] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P14 [x=13, y=14, index 237, payload 221] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P15 [x=14, y=14, index 238, payload 222] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P16 [x=15, y=14, index 239, payload 223] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+
+Row 16 (y=15)
+  P01 [x=0, y=15, index 240] = MAGIC BL - Cell magic corner 2: SPS_CELL_MAGIC_2 = float4(0,0,1,1).
+  P02 [x=1, y=15, index 241] = WORLD X - Header object/socket world position X float.
+  P03 [x=2, y=15, index 242] = WORLD Y - Header object/socket world position Y float.
+  P04 [x=3, y=15, index 243] = WORLD Z - Header object/socket world position Z float.
+  P05 [x=4, y=15, index 244] = FWD X - Header forward/normal X float.
+  P06 [x=5, y=15, index 245] = FWD Y - Header forward/normal Y float.
+  P07 [x=6, y=15, index 246] = FWD Z - Header forward/normal Z float.
+  P08 [x=7, y=15, index 247] = UP X - Header up X float.
+  P09 [x=8, y=15, index 248] = UP Y - Header up Y float.
+  P10 [x=9, y=15, index 249] = UP Z - Header up Z float.
+  P11 [x=10, y=15, index 250] = SCALE - Header world scale float.
+  P12 [x=11, y=15, index 251] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P13 [x=12, y=15, index 252] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P14 [x=13, y=15, index 253] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P15 [x=14, y=15, index 254] = UNUSED 0 - Unused by socket/orifice shader; final fragment output is 0.
+  P16 [x=15, y=15, index 255] = MAGIC BR - Cell magic corner 3: SPS_CELL_MAGIC_3 = float4(1,1,0,1).
+
+PENETRATOR / PLUG RESOLVER CELL (SPS_PRODUCT_PLUG = 2)
+------------------------------------------------------
+Row 01 (y=0)
+  P01 [x=0, y=0, index 0] = MAGIC TL - Cell magic corner 0: SPS_CELL_MAGIC_0 = float4(1,0,0,1).
+  P02 [x=1, y=0, index 1] = VENDOR - Header vendor uint. SPS writes SPS_VENDOR_SPS = 1.
+  P03 [x=2, y=0, index 2] = PRODUCT - Header product uint. Socket/orifice = 1, plug/resolver/penetrator = 2.
+  P04 [x=3, y=0, index 3] = VERSION - Header version uint. SPS_VERSION_SPS = 1.
+  P05 [x=4, y=0, index 4] = UNIQUE ID - Header unique id uint for this SPS instance.
+  P06 [x=5, y=0, index 5] = PLAYER ID - Header player id uint. 0 if not player-specific.
+  P07 [x=6, y=0, index 6] = DEBUG RGBA - Header debug raw rgba. Socket writes 0; resolver writes input.debug.
+  P08 [x=7, y=0, index 7] = UNUSED 0 - Unused by plug/resolver shader; final fragment output is 0.
+  P09 [x=8, y=0, index 8] = UNUSED 0 - Unused by plug/resolver shader; final fragment output is 0.
+  P10 [x=9, y=0, index 9] = UNUSED 0 - Unused by plug/resolver shader; final fragment output is 0.
+  P11 [x=10, y=0, index 10] = UNUSED 0 - Unused by plug/resolver shader; final fragment output is 0.
+  P12 [x=11, y=0, index 11] = UNUSED 0 - Unused by plug/resolver shader; final fragment output is 0.
+  P13 [x=12, y=0, index 12] = UNUSED 0 - Unused by plug/resolver shader; final fragment output is 0.
+  P14 [x=13, y=0, index 13] = UNUSED 0 - Unused by plug/resolver shader; final fragment output is 0.
+  P15 [x=14, y=0, index 14] = UNUSED 0 - Unused by plug/resolver shader; final fragment output is 0.
+  P16 [x=15, y=0, index 15] = MAGIC TR - Cell magic corner 1: SPS_CELL_MAGIC_1 = float4(0,1,0,1).
+
+Row 02 (y=1)
+  P01 [x=0, y=1, index 16, payload 0] = S1 POS X - Resolver chain S1: resolved socket target world X float. If no chain entry exists, shader explicitly writes 0.
+  P02 [x=1, y=1, index 17, payload 1] = S1 POS Y - Resolver chain S1: resolved socket target world Y float. If no chain entry exists, shader explicitly writes 0.
+  P03 [x=2, y=1, index 18, payload 2] = S1 POS Z - Resolver chain S1: resolved socket target world Z float. If no chain entry exists, shader explicitly writes 0.
+  P04 [x=3, y=1, index 19, payload 3] = S1 FWD X - Resolver chain S1: chain forward X float. If no chain entry exists, shader explicitly writes 0.
+  P05 [x=4, y=1, index 20, payload 4] = S1 FWD Y - Resolver chain S1: chain forward Y float. If no chain entry exists, shader explicitly writes 0.
+  P06 [x=5, y=1, index 21, payload 5] = S1 FWD Z - Resolver chain S1: chain forward Z float. If no chain entry exists, shader explicitly writes 0.
+  P07 [x=6, y=1, index 22, payload 6] = S1 UP X - Resolver chain S1: chain up X float. If no chain entry exists, shader explicitly writes 0.
+  P08 [x=7, y=1, index 23, payload 7] = S1 UP Y - Resolver chain S1: chain up Y float. If no chain entry exists, shader explicitly writes 0.
+  P09 [x=8, y=1, index 24, payload 8] = S1 UP Z - Resolver chain S1: chain up Z float. If no chain entry exists, shader explicitly writes 0.
+  P10 [x=9, y=1, index 25, payload 9] = S1 FLAGS - Resolver chain S1: matched socket flags uint. If no chain entry exists, shader explicitly writes 0.
+  P11 [x=10, y=1, index 26, payload 10] = S1 GUIDE - Resolver chain S1: guide/next-link flag uint; 1 when this chain entry is a guide target. If no chain entry exists, shader explicitly writes 0.
+  P12 [x=11, y=1, index 27, payload 11] = S1 TIN X - Resolver chain S1: matched socket tangent-in X plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P13 [x=12, y=1, index 28, payload 12] = S1 TIN Y - Resolver chain S1: matched socket tangent-in Y plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P14 [x=13, y=1, index 29, payload 13] = S1 TIN Z - Resolver chain S1: matched socket tangent-in Z plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P15 [x=14, y=1, index 30, payload 14] = S1 TOUT X - Resolver chain S1: matched socket tangent-out X plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P16 [x=15, y=1, index 31, payload 15] = S1 TOUT Y - Resolver chain S1: matched socket tangent-out Y plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+
+Row 03 (y=2)
+  P01 [x=0, y=2, index 32, payload 16] = S1 TOUT Z - Resolver chain S1: matched socket tangent-out Z plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P02 [x=1, y=2, index 33, payload 17] = S2 POS X - Resolver chain S2: resolved socket target world X float. If no chain entry exists, shader explicitly writes 0.
+  P03 [x=2, y=2, index 34, payload 18] = S2 POS Y - Resolver chain S2: resolved socket target world Y float. If no chain entry exists, shader explicitly writes 0.
+  P04 [x=3, y=2, index 35, payload 19] = S2 POS Z - Resolver chain S2: resolved socket target world Z float. If no chain entry exists, shader explicitly writes 0.
+  P05 [x=4, y=2, index 36, payload 20] = S2 FWD X - Resolver chain S2: chain forward X float. If no chain entry exists, shader explicitly writes 0.
+  P06 [x=5, y=2, index 37, payload 21] = S2 FWD Y - Resolver chain S2: chain forward Y float. If no chain entry exists, shader explicitly writes 0.
+  P07 [x=6, y=2, index 38, payload 22] = S2 FWD Z - Resolver chain S2: chain forward Z float. If no chain entry exists, shader explicitly writes 0.
+  P08 [x=7, y=2, index 39, payload 23] = S2 UP X - Resolver chain S2: chain up X float. If no chain entry exists, shader explicitly writes 0.
+  P09 [x=8, y=2, index 40, payload 24] = S2 UP Y - Resolver chain S2: chain up Y float. If no chain entry exists, shader explicitly writes 0.
+  P10 [x=9, y=2, index 41, payload 25] = S2 UP Z - Resolver chain S2: chain up Z float. If no chain entry exists, shader explicitly writes 0.
+  P11 [x=10, y=2, index 42, payload 26] = S2 FLAGS - Resolver chain S2: matched socket flags uint. If no chain entry exists, shader explicitly writes 0.
+  P12 [x=11, y=2, index 43, payload 27] = S2 GUIDE - Resolver chain S2: guide/next-link flag uint; 1 when this chain entry is a guide target. If no chain entry exists, shader explicitly writes 0.
+  P13 [x=12, y=2, index 44, payload 28] = S2 TIN X - Resolver chain S2: matched socket tangent-in X plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P14 [x=13, y=2, index 45, payload 29] = S2 TIN Y - Resolver chain S2: matched socket tangent-in Y plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P15 [x=14, y=2, index 46, payload 30] = S2 TIN Z - Resolver chain S2: matched socket tangent-in Z plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P16 [x=15, y=2, index 47, payload 31] = S2 TOUT X - Resolver chain S2: matched socket tangent-out X plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+
+Row 04 (y=3)
+  P01 [x=0, y=3, index 48, payload 32] = S2 TOUT Y - Resolver chain S2: matched socket tangent-out Y plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P02 [x=1, y=3, index 49, payload 33] = S2 TOUT Z - Resolver chain S2: matched socket tangent-out Z plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P03 [x=2, y=3, index 50, payload 34] = S3 POS X - Resolver chain S3: resolved socket target world X float. If no chain entry exists, shader explicitly writes 0.
+  P04 [x=3, y=3, index 51, payload 35] = S3 POS Y - Resolver chain S3: resolved socket target world Y float. If no chain entry exists, shader explicitly writes 0.
+  P05 [x=4, y=3, index 52, payload 36] = S3 POS Z - Resolver chain S3: resolved socket target world Z float. If no chain entry exists, shader explicitly writes 0.
+  P06 [x=5, y=3, index 53, payload 37] = S3 FWD X - Resolver chain S3: chain forward X float. If no chain entry exists, shader explicitly writes 0.
+  P07 [x=6, y=3, index 54, payload 38] = S3 FWD Y - Resolver chain S3: chain forward Y float. If no chain entry exists, shader explicitly writes 0.
+  P08 [x=7, y=3, index 55, payload 39] = S3 FWD Z - Resolver chain S3: chain forward Z float. If no chain entry exists, shader explicitly writes 0.
+  P09 [x=8, y=3, index 56, payload 40] = S3 UP X - Resolver chain S3: chain up X float. If no chain entry exists, shader explicitly writes 0.
+  P10 [x=9, y=3, index 57, payload 41] = S3 UP Y - Resolver chain S3: chain up Y float. If no chain entry exists, shader explicitly writes 0.
+  P11 [x=10, y=3, index 58, payload 42] = S3 UP Z - Resolver chain S3: chain up Z float. If no chain entry exists, shader explicitly writes 0.
+  P12 [x=11, y=3, index 59, payload 43] = S3 FLAGS - Resolver chain S3: matched socket flags uint. If no chain entry exists, shader explicitly writes 0.
+  P13 [x=12, y=3, index 60, payload 44] = S3 GUIDE - Resolver chain S3: guide/next-link flag uint; 1 when this chain entry is a guide target. If no chain entry exists, shader explicitly writes 0.
+  P14 [x=13, y=3, index 61, payload 45] = S3 TIN X - Resolver chain S3: matched socket tangent-in X plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P15 [x=14, y=3, index 62, payload 46] = S3 TIN Y - Resolver chain S3: matched socket tangent-in Y plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P16 [x=15, y=3, index 63, payload 47] = S3 TIN Z - Resolver chain S3: matched socket tangent-in Z plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+
+Row 05 (y=4)
+  P01 [x=0, y=4, index 64, payload 48] = S3 TOUT X - Resolver chain S3: matched socket tangent-out X plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P02 [x=1, y=4, index 65, payload 49] = S3 TOUT Y - Resolver chain S3: matched socket tangent-out Y plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P03 [x=2, y=4, index 66, payload 50] = S3 TOUT Z - Resolver chain S3: matched socket tangent-out Z plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P04 [x=3, y=4, index 67, payload 51] = S4 POS X - Resolver chain S4: resolved socket target world X float. If no chain entry exists, shader explicitly writes 0.
+  P05 [x=4, y=4, index 68, payload 52] = S4 POS Y - Resolver chain S4: resolved socket target world Y float. If no chain entry exists, shader explicitly writes 0.
+  P06 [x=5, y=4, index 69, payload 53] = S4 POS Z - Resolver chain S4: resolved socket target world Z float. If no chain entry exists, shader explicitly writes 0.
+  P07 [x=6, y=4, index 70, payload 54] = S4 FWD X - Resolver chain S4: chain forward X float. If no chain entry exists, shader explicitly writes 0.
+  P08 [x=7, y=4, index 71, payload 55] = S4 FWD Y - Resolver chain S4: chain forward Y float. If no chain entry exists, shader explicitly writes 0.
+  P09 [x=8, y=4, index 72, payload 56] = S4 FWD Z - Resolver chain S4: chain forward Z float. If no chain entry exists, shader explicitly writes 0.
+  P10 [x=9, y=4, index 73, payload 57] = S4 UP X - Resolver chain S4: chain up X float. If no chain entry exists, shader explicitly writes 0.
+  P11 [x=10, y=4, index 74, payload 58] = S4 UP Y - Resolver chain S4: chain up Y float. If no chain entry exists, shader explicitly writes 0.
+  P12 [x=11, y=4, index 75, payload 59] = S4 UP Z - Resolver chain S4: chain up Z float. If no chain entry exists, shader explicitly writes 0.
+  P13 [x=12, y=4, index 76, payload 60] = S4 FLAGS - Resolver chain S4: matched socket flags uint. If no chain entry exists, shader explicitly writes 0.
+  P14 [x=13, y=4, index 77, payload 61] = S4 GUIDE - Resolver chain S4: guide/next-link flag uint; 1 when this chain entry is a guide target. If no chain entry exists, shader explicitly writes 0.
+  P15 [x=14, y=4, index 78, payload 62] = S4 TIN X - Resolver chain S4: matched socket tangent-in X plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P16 [x=15, y=4, index 79, payload 63] = S4 TIN Y - Resolver chain S4: matched socket tangent-in Y plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+
+Row 06 (y=5)
+  P01 [x=0, y=5, index 80, payload 64] = S4 TIN Z - Resolver chain S4: matched socket tangent-in Z plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P02 [x=1, y=5, index 81, payload 65] = S4 TOUT X - Resolver chain S4: matched socket tangent-out X plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P03 [x=2, y=5, index 82, payload 66] = S4 TOUT Y - Resolver chain S4: matched socket tangent-out Y plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P04 [x=3, y=5, index 83, payload 67] = S4 TOUT Z - Resolver chain S4: matched socket tangent-out Z plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P05 [x=4, y=5, index 84, payload 68] = S5 POS X - Resolver chain S5: resolved socket target world X float. If no chain entry exists, shader explicitly writes 0.
+  P06 [x=5, y=5, index 85, payload 69] = S5 POS Y - Resolver chain S5: resolved socket target world Y float. If no chain entry exists, shader explicitly writes 0.
+  P07 [x=6, y=5, index 86, payload 70] = S5 POS Z - Resolver chain S5: resolved socket target world Z float. If no chain entry exists, shader explicitly writes 0.
+  P08 [x=7, y=5, index 87, payload 71] = S5 FWD X - Resolver chain S5: chain forward X float. If no chain entry exists, shader explicitly writes 0.
+  P09 [x=8, y=5, index 88, payload 72] = S5 FWD Y - Resolver chain S5: chain forward Y float. If no chain entry exists, shader explicitly writes 0.
+  P10 [x=9, y=5, index 89, payload 73] = S5 FWD Z - Resolver chain S5: chain forward Z float. If no chain entry exists, shader explicitly writes 0.
+  P11 [x=10, y=5, index 90, payload 74] = S5 UP X - Resolver chain S5: chain up X float. If no chain entry exists, shader explicitly writes 0.
+  P12 [x=11, y=5, index 91, payload 75] = S5 UP Y - Resolver chain S5: chain up Y float. If no chain entry exists, shader explicitly writes 0.
+  P13 [x=12, y=5, index 92, payload 76] = S5 UP Z - Resolver chain S5: chain up Z float. If no chain entry exists, shader explicitly writes 0.
+  P14 [x=13, y=5, index 93, payload 77] = S5 FLAGS - Resolver chain S5: matched socket flags uint. If no chain entry exists, shader explicitly writes 0.
+  P15 [x=14, y=5, index 94, payload 78] = S5 GUIDE - Resolver chain S5: guide/next-link flag uint; 1 when this chain entry is a guide target. If no chain entry exists, shader explicitly writes 0.
+  P16 [x=15, y=5, index 95, payload 79] = S5 TIN X - Resolver chain S5: matched socket tangent-in X plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+
+Row 07 (y=6)
+  P01 [x=0, y=6, index 96, payload 80] = S5 TIN Y - Resolver chain S5: matched socket tangent-in Y plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P02 [x=1, y=6, index 97, payload 81] = S5 TIN Z - Resolver chain S5: matched socket tangent-in Z plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P03 [x=2, y=6, index 98, payload 82] = S5 TOUT X - Resolver chain S5: matched socket tangent-out X plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P04 [x=3, y=6, index 99, payload 83] = S5 TOUT Y - Resolver chain S5: matched socket tangent-out Y plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P05 [x=4, y=6, index 100, payload 84] = S5 TOUT Z - Resolver chain S5: matched socket tangent-out Z plus radius offset when enabled. If no chain entry exists, shader explicitly writes 0.
+  P06 [x=5, y=6, index 101, payload 85] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P07 [x=6, y=6, index 102, payload 86] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P08 [x=7, y=6, index 103, payload 87] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P09 [x=8, y=6, index 104, payload 88] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P10 [x=9, y=6, index 105, payload 89] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P11 [x=10, y=6, index 106, payload 90] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P12 [x=11, y=6, index 107, payload 91] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P13 [x=12, y=6, index 108, payload 92] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P14 [x=13, y=6, index 109, payload 93] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P15 [x=14, y=6, index 110, payload 94] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P16 [x=15, y=6, index 111, payload 95] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+
+Row 08 (y=7)
+  P01 [x=0, y=7, index 112, payload 96] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P02 [x=1, y=7, index 113, payload 97] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P03 [x=2, y=7, index 114, payload 98] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P04 [x=3, y=7, index 115, payload 99] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P05 [x=4, y=7, index 116, payload 100] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P06 [x=5, y=7, index 117, payload 101] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P07 [x=6, y=7, index 118, payload 102] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P08 [x=7, y=7, index 119, payload 103] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P09 [x=8, y=7, index 120, payload 104] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P10 [x=9, y=7, index 121, payload 105] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P11 [x=10, y=7, index 122, payload 106] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P12 [x=11, y=7, index 123, payload 107] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P13 [x=12, y=7, index 124, payload 108] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P14 [x=13, y=7, index 125, payload 109] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P15 [x=14, y=7, index 126, payload 110] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P16 [x=15, y=7, index 127, payload 111] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+
+Row 09 (y=8)
+  P01 [x=0, y=8, index 128, payload 112] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P02 [x=1, y=8, index 129, payload 113] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P03 [x=2, y=8, index 130, payload 114] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P04 [x=3, y=8, index 131, payload 115] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P05 [x=4, y=8, index 132, payload 116] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P06 [x=5, y=8, index 133, payload 117] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P07 [x=6, y=8, index 134, payload 118] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P08 [x=7, y=8, index 135, payload 119] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P09 [x=8, y=8, index 136, payload 120] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P10 [x=9, y=8, index 137, payload 121] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P11 [x=10, y=8, index 138, payload 122] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P12 [x=11, y=8, index 139, payload 123] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P13 [x=12, y=8, index 140, payload 124] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P14 [x=13, y=8, index 141, payload 125] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P15 [x=14, y=8, index 142, payload 126] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P16 [x=15, y=8, index 143, payload 127] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+
+Row 10 (y=9)
+  P01 [x=0, y=9, index 144, payload 128] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P02 [x=1, y=9, index 145, payload 129] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P03 [x=2, y=9, index 146, payload 130] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P04 [x=3, y=9, index 147, payload 131] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P05 [x=4, y=9, index 148, payload 132] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P06 [x=5, y=9, index 149, payload 133] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P07 [x=6, y=9, index 150, payload 134] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P08 [x=7, y=9, index 151, payload 135] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P09 [x=8, y=9, index 152, payload 136] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P10 [x=9, y=9, index 153, payload 137] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P11 [x=10, y=9, index 154, payload 138] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P12 [x=11, y=9, index 155, payload 139] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P13 [x=12, y=9, index 156, payload 140] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P14 [x=13, y=9, index 157, payload 141] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P15 [x=14, y=9, index 158, payload 142] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P16 [x=15, y=9, index 159, payload 143] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+
+Row 11 (y=10)
+  P01 [x=0, y=10, index 160, payload 144] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P02 [x=1, y=10, index 161, payload 145] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P03 [x=2, y=10, index 162, payload 146] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P04 [x=3, y=10, index 163, payload 147] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P05 [x=4, y=10, index 164, payload 148] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P06 [x=5, y=10, index 165, payload 149] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P07 [x=6, y=10, index 166, payload 150] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P08 [x=7, y=10, index 167, payload 151] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P09 [x=8, y=10, index 168, payload 152] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P10 [x=9, y=10, index 169, payload 153] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P11 [x=10, y=10, index 170, payload 154] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P12 [x=11, y=10, index 171, payload 155] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P13 [x=12, y=10, index 172, payload 156] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P14 [x=13, y=10, index 173, payload 157] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P15 [x=14, y=10, index 174, payload 158] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P16 [x=15, y=10, index 175, payload 159] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+
+Row 12 (y=11)
+  P01 [x=0, y=11, index 176, payload 160] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P02 [x=1, y=11, index 177, payload 161] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P03 [x=2, y=11, index 178, payload 162] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P04 [x=3, y=11, index 179, payload 163] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P05 [x=4, y=11, index 180, payload 164] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P06 [x=5, y=11, index 181, payload 165] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P07 [x=6, y=11, index 182, payload 166] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P08 [x=7, y=11, index 183, payload 167] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P09 [x=8, y=11, index 184, payload 168] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P10 [x=9, y=11, index 185, payload 169] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P11 [x=10, y=11, index 186, payload 170] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P12 [x=11, y=11, index 187, payload 171] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P13 [x=12, y=11, index 188, payload 172] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P14 [x=13, y=11, index 189, payload 173] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P15 [x=14, y=11, index 190, payload 174] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P16 [x=15, y=11, index 191, payload 175] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+
+Row 13 (y=12)
+  P01 [x=0, y=12, index 192, payload 176] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P02 [x=1, y=12, index 193, payload 177] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P03 [x=2, y=12, index 194, payload 178] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P04 [x=3, y=12, index 195, payload 179] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P05 [x=4, y=12, index 196, payload 180] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P06 [x=5, y=12, index 197, payload 181] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P07 [x=6, y=12, index 198, payload 182] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P08 [x=7, y=12, index 199, payload 183] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P09 [x=8, y=12, index 200, payload 184] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P10 [x=9, y=12, index 201, payload 185] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P11 [x=10, y=12, index 202, payload 186] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P12 [x=11, y=12, index 203, payload 187] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P13 [x=12, y=12, index 204, payload 188] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P14 [x=13, y=12, index 205, payload 189] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P15 [x=14, y=12, index 206, payload 190] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+  P16 [x=15, y=12, index 207, payload 191] = ZERO GAP - Resolver reserved gap. sps_resolver_payload_rgba returns true with rgba = 0 here.
+
+Row 14 (y=13)
+  P01 [x=0, y=13, index 208, payload 192] = META R - Metadata color X/R float from _SPS_MetadataColor.x.
+  P02 [x=1, y=13, index 209, payload 193] = META G - Metadata color Y/G float from _SPS_MetadataColor.y.
+  P03 [x=2, y=13, index 210, payload 194] = META B - Metadata color Z/B float from _SPS_MetadataColor.z.
+  P04 [x=3, y=13, index 211, payload 195] = LENGTH - Resolver length float from sps_resolver_length().
+  P05 [x=4, y=13, index 212, payload 196] = RADIUS - Resolver radius float from sps_resolver_radius().
+  P06 [x=5, y=13, index 213, payload 197] = SOCK PLAYER - First matched socket player id uint, or 0 when no socket found.
+  P07 [x=6, y=13, index 214, payload 198] = SOCK ID - First matched socket unique id uint, or 0 when no socket found.
+  P08 [x=7, y=13, index 215, payload 199] = SOCK FRAC - First matched socket fraction float, 0 when no socket found.
+  P09 [x=8, y=13, index 216, payload 200] = ZERO GAP - Resolver reserved gap between metadata and radius samples. Explicit rgba = 0.
+  P10 [x=9, y=13, index 217, payload 201] = ZERO GAP - Resolver reserved gap between metadata and radius samples. Explicit rgba = 0.
+  P11 [x=10, y=13, index 218, payload 202] = ZERO GAP - Resolver reserved gap between metadata and radius samples. Explicit rgba = 0.
+  P12 [x=11, y=13, index 219, payload 203] = ZERO GAP - Resolver reserved gap between metadata and radius samples. Explicit rgba = 0.
+  P13 [x=12, y=13, index 220, payload 204] = ZERO GAP - Resolver reserved gap between metadata and radius samples. Explicit rgba = 0.
+  P14 [x=13, y=13, index 221, payload 205] = ZERO GAP - Resolver reserved gap between metadata and radius samples. Explicit rgba = 0.
+  P15 [x=14, y=13, index 222, payload 206] = ZERO GAP - Resolver reserved gap between metadata and radius samples. Explicit rgba = 0.
+  P16 [x=15, y=13, index 223, payload 207] = ZERO GAP - Resolver reserved gap between metadata and radius samples. Explicit rgba = 0.
+
+Row 15 (y=14)
+  P01 [x=0, y=14, index 224, payload 208] = RAD 0 - Resolver radius sample 0 float from sps_resolver_radius_sample(0).
+  P02 [x=1, y=14, index 225, payload 209] = RAD 1 - Resolver radius sample 1 float from sps_resolver_radius_sample(1).
+  P03 [x=2, y=14, index 226, payload 210] = RAD 2 - Resolver radius sample 2 float from sps_resolver_radius_sample(2).
+  P04 [x=3, y=14, index 227, payload 211] = RAD 3 - Resolver radius sample 3 float from sps_resolver_radius_sample(3).
+  P05 [x=4, y=14, index 228, payload 212] = RAD 4 - Resolver radius sample 4 float from sps_resolver_radius_sample(4).
+  P06 [x=5, y=14, index 229, payload 213] = RAD 5 - Resolver radius sample 5 float from sps_resolver_radius_sample(5).
+  P07 [x=6, y=14, index 230, payload 214] = RAD 6 - Resolver radius sample 6 float from sps_resolver_radius_sample(6).
+  P08 [x=7, y=14, index 231, payload 215] = RAD 7 - Resolver radius sample 7 float from sps_resolver_radius_sample(7).
+  P09 [x=8, y=14, index 232, payload 216] = RAD 8 - Resolver radius sample 8 float from sps_resolver_radius_sample(8).
+  P10 [x=9, y=14, index 233, payload 217] = RAD 9 - Resolver radius sample 9 float from sps_resolver_radius_sample(9).
+  P11 [x=10, y=14, index 234, payload 218] = RAD 10 - Resolver radius sample 10 float from sps_resolver_radius_sample(10).
+  P12 [x=11, y=14, index 235, payload 219] = RAD 11 - Resolver radius sample 11 float from sps_resolver_radius_sample(11).
+  P13 [x=12, y=14, index 236, payload 220] = RAD 12 - Resolver radius sample 12 float from sps_resolver_radius_sample(12).
+  P14 [x=13, y=14, index 237, payload 221] = RAD 13 - Resolver radius sample 13 float from sps_resolver_radius_sample(13).
+  P15 [x=14, y=14, index 238, payload 222] = RAD 14 - Resolver radius sample 14 float from sps_resolver_radius_sample(14).
+  P16 [x=15, y=14, index 239, payload 223] = RAD 15 - Resolver radius sample 15 float from sps_resolver_radius_sample(15).
+
+Row 16 (y=15)
+  P01 [x=0, y=15, index 240] = MAGIC BL - Cell magic corner 2: SPS_CELL_MAGIC_2 = float4(0,0,1,1).
+  P02 [x=1, y=15, index 241] = WORLD X - Header object/socket world position X float.
+  P03 [x=2, y=15, index 242] = WORLD Y - Header object/socket world position Y float.
+  P04 [x=3, y=15, index 243] = WORLD Z - Header object/socket world position Z float.
+  P05 [x=4, y=15, index 244] = FWD X - Header forward/normal X float.
+  P06 [x=5, y=15, index 245] = FWD Y - Header forward/normal Y float.
+  P07 [x=6, y=15, index 246] = FWD Z - Header forward/normal Z float.
+  P08 [x=7, y=15, index 247] = UP X - Header up X float.
+  P09 [x=8, y=15, index 248] = UP Y - Header up Y float.
+  P10 [x=9, y=15, index 249] = UP Z - Header up Z float.
+  P11 [x=10, y=15, index 250] = SCALE - Header world scale float.
+  P12 [x=11, y=15, index 251] = UNUSED 0 - Unused by plug/resolver shader; final fragment output is 0.
+  P13 [x=12, y=15, index 252] = UNUSED 0 - Unused by plug/resolver shader; final fragment output is 0.
+  P14 [x=13, y=15, index 253] = UNUSED 0 - Unused by plug/resolver shader; final fragment output is 0.
+  P15 [x=14, y=15, index 254] = UNUSED 0 - Unused by plug/resolver shader; final fragment output is 0.
+  P16 [x=15, y=15, index 255] = MAGIC BR - Cell magic corner 3: SPS_CELL_MAGIC_3 = float4(1,1,0,1).
+

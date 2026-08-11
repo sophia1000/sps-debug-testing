@@ -1,0 +1,33 @@
+# Double-sided debug panel quad for Unity.
+# Size: 1x1, centered on origin, lies in the XY plane like Unity's built-in Quad.
+# The -Z side matches Unity Quad UV orientation.
+# The +Z side has separate vertices with flipped U coordinates so text reads correctly from behind.
+
+o SpsDebugDoubleSidedQuad
+
+v -0.500000 -0.500000 0.000000
+v  0.500000 -0.500000 0.000000
+v  0.500000  0.500000 0.000000
+v -0.500000  0.500000 0.000000
+v -0.500000 -0.500000 0.000000
+v  0.500000 -0.500000 0.000000
+v  0.500000  0.500000 0.000000
+v -0.500000  0.500000 0.000000
+
+vt 0.000000 0.000000
+vt 1.000000 0.000000
+vt 1.000000 1.000000
+vt 0.000000 1.000000
+vt 1.000000 0.000000
+vt 0.000000 0.000000
+vt 0.000000 1.000000
+vt 1.000000 1.000000
+
+vn  0.000000  0.000000 -1.000000
+vn  0.000000  0.000000  1.000000
+
+g Front_UnityQuad_Upright
+f 1/1/1 4/4/1 3/3/1 2/2/1
+
+g Back_Upright_NotMirrored
+f 5/5/2 6/6/2 7/7/2 8/8/2

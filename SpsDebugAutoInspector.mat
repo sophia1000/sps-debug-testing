@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: SpsDebugAutoInspector
+  m_Shader: {fileID: 4800000, guid: 4386d6c5ca3b4a538eb07fb6d8f2601a, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords:
+  - _SPS_DEBUGSHOWCELLBITMAP_ON
+  - _SPS_DEBUGSHOWCELLLEGEND_ON
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: 2000
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _SPS_DebugCellLegendTex:
+        m_Texture: {fileID: 2800000, guid: b8d860857afa442ea14fa7e33bc77191, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SPS_DebugFontAtlas:
+        m_Texture: {fileID: 2800000, guid: a995fa3089824702bf8223c611e8fda6, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _SPS_DebugResolverLegendTex:
+        m_Texture: {fileID: 2800000, guid: 47ae5026305c48ffaf7570f52c8010b4, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BlendOp: 0
+    - _Cull: 0
+    - _DstBlend: 0
+    - _SPS_DebugCacheRecords: 128
+    - _SPS_DebugCellBitmapPadding: 0.02
+    - _SPS_DebugCellBitmapSize: 0.35
+    - _SPS_DebugFontSoftness: 1.5
+    - _SPS_DebugFontWeight: 0.5
+    - _SPS_DebugOpacity: 1
+    - _SPS_DebugProduct: 2
+    - _SPS_DebugScroll: 0.514
+    - _SPS_DebugShowCellBitmap: 1
+    - _SPS_DebugShowCellLegend: 1
+    - _SPS_DebugShowCellMap: 0
+    - _SPS_DebugSource: 0
+    - _SrcBlend: 1
+    - _ZTest: 4
+    - _ZWrite: 1
+    m_Colors:
+    - _SPS_DebugBackColor: {r: 0.015, g: 0.02, b: 0.025, a: 1}
+    - _SPS_DebugTextColor: {r: 0.75, g: 1, b: 0.85, a: 1}
+  m_BuildTextureStacks: []
