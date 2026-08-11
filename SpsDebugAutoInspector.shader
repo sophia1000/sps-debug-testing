@@ -163,10 +163,10 @@ Shader "Hidden/VRCFury/SpsDebugAutoInspector" {
                 );
                 int slot = found ? (int)selectedSlot : -1;
 
-                emit_auto_vertex(float2(-0.5,  0.5), float2(1, 1), slot, count, selectedIndex, stream);
-                emit_auto_vertex(float2( 0.5,  0.5), float2(0, 1), slot, count, selectedIndex, stream);
-                emit_auto_vertex(float2(-0.5, -0.5), float2(1, 0), slot, count, selectedIndex, stream);
-                emit_auto_vertex(float2( 0.5, -0.5), float2(0, 0), slot, count, selectedIndex, stream);
+                emit_auto_vertex(float2(-0.5,  0.5), float2(0, 1), slot, count, selectedIndex, stream);
+                emit_auto_vertex(float2( 0.5,  0.5), float2(1, 1), slot, count, selectedIndex, stream);
+                emit_auto_vertex(float2(-0.5, -0.5), float2(0, 0), slot, count, selectedIndex, stream);
+                emit_auto_vertex(float2( 0.5, -0.5), float2(1, 0), slot, count, selectedIndex, stream);
                 stream.RestartStrip();
             }
 
