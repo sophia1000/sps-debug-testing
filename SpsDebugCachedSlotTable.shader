@@ -1,7 +1,7 @@
 Shader "Hidden/VRCFury/SpsDebugCachedSlotTable" {
     Properties {
         _SPS_DebugFontAtlas("Font Atlas", 2D) = "white" {}
-        _SPS_DebugCacheRecords("Distance Scan Cap", Range(8, 256)) = 128
+        _SPS_DebugCacheRecords("Target Cap", Range(8, 128)) = 128
         _SPS_DebugScroll("Scroll", Range(0, 1)) = 0
         _SPS_DebugMaxRows("Max Visible Rows", Range(1, 28)) = 16
         _SPS_DebugOpacity("Opacity", Range(0, 1)) = 1
@@ -401,51 +401,18 @@ Shader "Hidden/VRCFury/SpsDebugCachedSlotTable" {
                 float3 panelWorld = mul(unity_ObjectToWorld, float4(0, 0, 0, 1)).xyz;
                 uint limit = scan_result_limit();
                 uint rows = visible_row_count();
-                uint count = sps_debug_direct_count(tex, SPS_DEBUG_PRODUCT_ANY, panelWorld, limit);
+                SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS];
+                uint count = sps_debug_direct_collect(tex, SPS_DEBUG_PRODUCT_ANY, panelWorld, limit, records);
                 uint first = display_start_index(count, rows);
 
                 emit_table_band(0u, TABLE_FIRST_ROW, -1, -1, count, first, stream);
-
-                SpsDebugDirectCursor cursor;
-                sps_debug_direct_reset(cursor);
-                uint selectedSlot = 0u;
-                uint selectedProduct = 0u;
-                uint selectedDistanceKey = 0u;
-                float3 selectedWorld = 0.0;
-
-                [loop]
-                for (uint skip = 0u; skip < SPS_DEBUG_DIRECT_MAX_RESULTS; skip++) {
-                    if (skip >= first) break;
-                    if (!sps_debug_direct_next(
-                        tex,
-                        SPS_DEBUG_PRODUCT_ANY,
-                        panelWorld,
-                        cursor,
-                        selectedSlot,
-                        selectedProduct,
-                        selectedWorld,
-                        selectedDistanceKey
-                    )) break;
-                    sps_debug_direct_advance(cursor, selectedDistanceKey, selectedProduct);
-                }
 
                 [loop]
                 for (uint visibleIndex = 0u; visibleIndex < 28u; visibleIndex++) {
                     if (visibleIndex >= rows) break;
                     int slot = -1;
-                    if (first + visibleIndex < count && sps_debug_direct_next(
-                        tex,
-                        SPS_DEBUG_PRODUCT_ANY,
-                        panelWorld,
-                        cursor,
-                        selectedSlot,
-                        selectedProduct,
-                        selectedWorld,
-                        selectedDistanceKey
-                    )) {
-                        slot = (int)selectedSlot;
-                        sps_debug_direct_advance(cursor, selectedDistanceKey, selectedProduct);
-                    }
+                    uint recordIndex = first + visibleIndex;
+                    if (recordIndex < count) slot = (int)records[recordIndex].slot;
                     emit_table_band(
                         TABLE_FIRST_ROW + visibleIndex,
                         1u,

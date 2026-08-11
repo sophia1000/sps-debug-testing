@@ -9,7 +9,7 @@ Shader "Hidden/VRCFury/SpsDebugAutoInspector" {
         [Toggle] _SPS_DebugShowCellLegend("Show Slot Bitmap Legend", Float) = 1
         [Toggle] _SPS_DebugShowCellMap("Show Bitmap Zone Map Overlay", Float) = 0
         _SPS_DebugScroll("Scroll", Range(0, 1)) = 0
-        _SPS_DebugCacheRecords("Distance Scan Cap", Range(8, 256)) = 128
+        _SPS_DebugCacheRecords("Target Cap", Range(8, 128)) = 128
         _SPS_DebugCellBitmapSize("Slot Bitmap Size", Range(0.1, 0.5)) = 0.28
         _SPS_DebugCellBitmapPadding("Slot Bitmap Padding", Range(0, 0.2)) = 0.02
         _SPS_DebugOpacity("Opacity", Range(0, 1)) = 1
@@ -141,27 +141,12 @@ Shader "Hidden/VRCFury/SpsDebugAutoInspector" {
                 float3 panelWorld = mul(unity_ObjectToWorld, float4(0, 0, 0, 1)).xyz;
                 uint filter = min((uint)round(_SPS_DebugProduct), SPS_DEBUG_PRODUCT_PLUG);
                 uint limit = min(max((uint)round(_SPS_DebugCacheRecords), 1u), SPS_DEBUG_DIRECT_MAX_RESULTS);
-                uint count = sps_debug_direct_count(tex, filter, panelWorld, limit);
+                SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS];
+                uint count = sps_debug_direct_collect(tex, filter, panelWorld, limit, records);
                 uint selectedIndex = count == 0u
                     ? 0u
                     : (uint)round(saturate(_SPS_DebugScroll) * (float)(count - 1u));
-
-                uint selectedSlot = 0u;
-                uint selectedProduct = 0u;
-                uint selectedDistanceKey = 0u;
-                float3 selectedWorld = 0.0;
-                bool found = count > 0u && sps_debug_direct_select(
-                    tex,
-                    filter,
-                    panelWorld,
-                    selectedIndex,
-                    limit,
-                    selectedSlot,
-                    selectedProduct,
-                    selectedWorld,
-                    selectedDistanceKey
-                );
-                int slot = found ? (int)selectedSlot : -1;
+                int slot = count > 0u ? (int)records[selectedIndex].slot : -1;
 
                 emit_auto_vertex(float2(-0.5,  0.5), float2(0, 1), slot, count, selectedIndex, stream);
                 emit_auto_vertex(float2( 0.5,  0.5), float2(1, 1), slot, count, selectedIndex, stream);

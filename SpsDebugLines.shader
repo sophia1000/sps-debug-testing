@@ -1,6 +1,5 @@
 Shader "Hidden/VRCFury/SpsDebugLines" {
     Properties {
-        _SPS_DebugCacheRecords("Distance Scan Cap", Range(8, 256)) = 128
         _SPS_DebugMaxLines("Max Lines", Range(1, 28)) = 16
         _SPS_LineWorldWidth("Line Width (world units)", Float) = 0.02
         _SPS_LineOpacity("Line Opacity", Range(0, 1)) = 0.8
@@ -37,10 +36,10 @@ Shader "Hidden/VRCFury/SpsDebugLines" {
             #pragma multi_compile_instancing
 
             #include "UnityCG.cginc"
+            #define SPS_DEBUG_DIRECT_MAX_RESULTS 28
             #include "SpsDebugDirectScan.cginc"
 
-            #define SPS_DEBUG_LINES_MAX 28
-            float _SPS_DebugCacheRecords;
+            #define SPS_DEBUG_LINES_MAX SPS_DEBUG_DIRECT_MAX_RESULTS
             float _SPS_DebugMaxLines;
             float _SPS_LineWorldWidth;
             float _SPS_LineOpacity;
@@ -126,18 +125,14 @@ Shader "Hidden/VRCFury/SpsDebugLines" {
             void EmitDirectLines(inout TriangleStream<g2f> ts) {
                 float3 rootWS = mul(unity_ObjectToWorld, float4(0, 0, 0, 1)).xyz;
                 int maxLines = clamp((int)round(_SPS_DebugMaxLines), 1, SPS_DEBUG_LINES_MAX);
-                maxLines = min(maxLines, (int)round(max(_SPS_DebugCacheRecords, 1.0)));
                 SpsTexture tex = SPS_GET_TEX(_VFGridFinal);
-                SpsDebugDirectCursor cursor;
-                sps_debug_direct_reset(cursor);
+                SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS];
+                uint count = sps_debug_direct_collect(tex, SPS_DEBUG_PRODUCT_ANY, rootWS, (uint)maxLines, records);
 
                 [loop]
                 for (int resultIndex = 0; resultIndex < SPS_DEBUG_LINES_MAX; resultIndex++) {
-                    if (resultIndex >= maxLines) break;
-                    uint slot, product, distanceKey;
-                    float3 targetWS;
-                    if (!sps_debug_direct_next(tex, SPS_DEBUG_PRODUCT_ANY, rootWS, cursor, slot, product, targetWS, distanceKey)) break;
-                    sps_debug_direct_advance(cursor, distanceKey, product);
+                    if ((uint)resultIndex >= count) break;
+                    float3 targetWS = records[resultIndex].world;
                     if (dot(targetWS - rootWS, targetWS - rootWS) >= 0.000001) {
                         EmitWorldLine(rootWS, targetWS, _SPS_LineColor.rgb, ts);
                     }

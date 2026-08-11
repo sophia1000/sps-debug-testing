@@ -1,6 +1,5 @@
 Shader "Hidden/VRCFury/SpsDebugTargetPlanes" {
     Properties {
-        _SPS_DebugCacheRecords("Distance Scan Cap", Range(8, 256)) = 128
         _SPS_DebugMaxPlanes("Max Planes", Range(1, 24)) = 16
         _SPS_MarkerTexture("Marker Texture", 2D) = "white" {}
         _SPS_MarkerSize("Plane Size (meters)", Float) = 0.25
@@ -40,10 +39,10 @@ Shader "Hidden/VRCFury/SpsDebugTargetPlanes" {
             #pragma multi_compile_instancing
 
             #include "UnityCG.cginc"
+            #define SPS_DEBUG_DIRECT_MAX_RESULTS 24
             #include "SpsDebugDirectScan.cginc"
 
-            #define SPS_DEBUG_PLANES_MAX 24
-            float _SPS_DebugCacheRecords;
+            #define SPS_DEBUG_PLANES_MAX SPS_DEBUG_DIRECT_MAX_RESULTS
             float _SPS_DebugMaxPlanes;
             sampler2D _SPS_MarkerTexture;
             float4 _SPS_MarkerTexture_ST;
@@ -142,20 +141,15 @@ Shader "Hidden/VRCFury/SpsDebugTargetPlanes" {
                 if (_SPS_MarkerOpacity <= 0.001 || _SPS_MarkerTint.a <= 0.001) return;
 
                 int maxPlanes = clamp((int)round(_SPS_DebugMaxPlanes), 1, SPS_DEBUG_PLANES_MAX);
-                maxPlanes = min(maxPlanes, (int)round(max(_SPS_DebugCacheRecords, 1.0)));
                 float3 originWS = mul(unity_ObjectToWorld, float4(0, 0, 0, 1)).xyz;
                 SpsTexture tex = SPS_GET_TEX(_VFGridFinal);
-                SpsDebugDirectCursor cursor;
-                sps_debug_direct_reset(cursor);
+                SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS];
+                uint count = sps_debug_direct_collect(tex, SPS_DEBUG_PRODUCT_ANY, originWS, (uint)maxPlanes, records);
 
                 [loop]
                 for (int resultIndex = 0; resultIndex < SPS_DEBUG_PLANES_MAX; resultIndex++) {
-                    if (resultIndex >= maxPlanes) break;
-                    uint slot, product, distanceKey;
-                    float3 targetWS;
-                    if (!sps_debug_direct_next(tex, SPS_DEBUG_PRODUCT_ANY, originWS, cursor, slot, product, targetWS, distanceKey)) break;
-                    sps_debug_direct_advance(cursor, distanceKey, product);
-                    EmitMarkerQuad(targetWS, ts);
+                    if ((uint)resultIndex >= count) break;
+                    EmitMarkerQuad(records[resultIndex].world, ts);
                 }
             }
 

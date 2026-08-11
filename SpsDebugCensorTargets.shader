@@ -1,6 +1,5 @@
 Shader "Hidden/VRCFury/SpsDebugCensorTargets" {
     Properties {
-        _SPS_DebugCacheRecords("Distance Scan Cap", Range(8, 256)) = 128
         _SPS_DebugMaxCensors("Max Censor Targets", Range(1, 20)) = 16
 
         [KeywordEnum(Solid, Pixelate, BoxBlur, GaussianBlur)] _SPS_CensorMode("Effect", Float) = 0
@@ -55,12 +54,12 @@ Shader "Hidden/VRCFury/SpsDebugCensorTargets" {
             #pragma shader_feature_local _SPS_CENSORMODE_SOLID _SPS_CENSORMODE_PIXELATE _SPS_CENSORMODE_BOXBLUR _SPS_CENSORMODE_GAUSSIANBLUR
 
             #include "UnityCG.cginc"
+            #define SPS_DEBUG_DIRECT_MAX_RESULTS 20
             #include "SpsDebugDirectScan.cginc"
 
-            #define SPS_DEBUG_CENSOR_MAX 20
+            #define SPS_DEBUG_CENSOR_MAX SPS_DEBUG_DIRECT_MAX_RESULTS
             #define SPS_DEBUG_BLUR_SAMPLES_MAX 8
 
-            float _SPS_DebugCacheRecords;
             float _SPS_DebugMaxCensors;
             float _SPS_CensorShape;
             float _SPS_CensorWidth;
@@ -171,20 +170,15 @@ Shader "Hidden/VRCFury/SpsDebugCensorTargets" {
 
             void EmitDirectCensors(inout TriangleStream<g2f> stream) {
                 int maxCensors = clamp((int)round(_SPS_DebugMaxCensors), 1, SPS_DEBUG_CENSOR_MAX);
-                maxCensors = min(maxCensors, (int)round(max(_SPS_DebugCacheRecords, 1.0)));
                 float3 originWS = mul(unity_ObjectToWorld, float4(0, 0, 0, 1)).xyz;
                 SpsTexture tex = SPS_GET_TEX(_VFGridFinal);
-                SpsDebugDirectCursor cursor;
-                sps_debug_direct_reset(cursor);
+                SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS];
+                uint count = sps_debug_direct_collect(tex, SPS_DEBUG_PRODUCT_ANY, originWS, (uint)maxCensors, records);
 
                 [loop]
                 for (int resultIndex = 0; resultIndex < SPS_DEBUG_CENSOR_MAX; resultIndex++) {
-                    if (resultIndex >= maxCensors) break;
-                    uint slot, product, distanceKey;
-                    float3 targetWS;
-                    if (!sps_debug_direct_next(tex, SPS_DEBUG_PRODUCT_ANY, originWS, cursor, slot, product, targetWS, distanceKey)) break;
-                    sps_debug_direct_advance(cursor, distanceKey, product);
-                    EmitCensorQuad(targetWS, stream);
+                    if ((uint)resultIndex >= count) break;
+                    EmitCensorQuad(records[resultIndex].world, stream);
                 }
             }
 
