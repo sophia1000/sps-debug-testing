@@ -337,6 +337,7 @@ Shader "Hidden/VRCFury/SpsDebugAutoInspector" {
                 if (row == 8) return col < 17;
                 if (row == 9) return col < 50;
                 if (row == 10 || row == 11) return col < 52;
+                if (row == 12) return col < 37;
                 if (row == 13) return col < 37;
                 return false;
             }
