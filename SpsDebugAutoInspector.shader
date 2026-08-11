@@ -315,7 +315,7 @@ Shader "Hidden/VRCFury/SpsDebugAutoInspector" {
                 if (row == 2) {
                     if (col >= 1 && col < 4) return word_at(col, 1, 36);
                     if (col == 4) return 58;
-                    if (col >= 6 && col < 11) return uint_at(col, 6, selectedIndex, 5);
+                    if (col >= 6 && col < 11) return uint_at(col, 6, count > 0u ? selectedIndex + 1u : 0u, 5);
                     if (col == 11) return 47;
                     if (col >= 13 && col < 18) return uint_at(col, 13, count, 5);
                     if (col >= 20 && col < 24) return word_at(col, 20, 8);
