@@ -68,7 +68,6 @@ Shader "Hidden/VRCFury/SpsDebugTargetPlanes" {
 
             struct g2f {
                 float4 pos : SV_POSITION;
-                fixed4 col : COLOR0;
                 float2 uv : TEXCOORD0;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -102,9 +101,24 @@ Shader "Hidden/VRCFury/SpsDebugTargetPlanes" {
                 }
             }
 
-            void EmitMarkerQuad(float3 targetWS, inout TriangleStream<g2f> ts) {
+            void AppendMarkerVertex(
+                v2g stereoInput,
+                float3 worldPos,
+                float2 uv,
+                inout TriangleStream<g2f> ts
+            ) {
+                g2f o = (g2f)0;
+                o.pos = UnityWorldToClipPos(worldPos);
+                o.uv = uv;
+                UNITY_TRANSFER_VERTEX_OUTPUT_STEREO(stereoInput, o);
+                ts.Append(o);
+            }
+
+            void EmitMarkerQuad(v2g stereoInput, float3 targetWS, inout TriangleStream<g2f> ts) {
                 float3 anchorWS = targetWS + float3(0, _SPS_MarkerOffset, 0);
-                float3 camPos, camRight, camUp;
+                float3 camPos = 0.0;
+                float3 camRight = float3(1, 0, 0);
+                float3 camUp = float3(0, 1, 0);
                 GetCenterEyeBasis(anchorWS, camPos, camRight, camUp);
 
                 float halfSize = max(_SPS_MarkerSize, 0.001) * 0.5;
@@ -113,43 +127,30 @@ Shader "Hidden/VRCFury/SpsDebugTargetPlanes" {
                 float3 trWS = anchorWS + ( halfSize) * camRight + ( halfSize) * camUp;
                 float3 brWS = anchorWS + ( halfSize) * camRight + (-halfSize) * camUp;
 
-                g2f o;
-                UNITY_INITIALIZE_OUTPUT(g2f, o);
-                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-                o.col = fixed4(_SPS_MarkerTint.rgb, saturate(_SPS_MarkerTint.a * _SPS_MarkerOpacity));
-
-                o.uv = float2(1, 1);
-                o.pos = UnityWorldToClipPos(tlWS);
-                ts.Append(o);
-
-                o.uv = float2(1, 0);
-                o.pos = UnityWorldToClipPos(blWS);
-                ts.Append(o);
-
-                o.uv = float2(0, 1);
-                o.pos = UnityWorldToClipPos(trWS);
-                ts.Append(o);
-
-                o.uv = float2(0, 0);
-                o.pos = UnityWorldToClipPos(brWS);
-                ts.Append(o);
+                AppendMarkerVertex(stereoInput, tlWS, float2(1, 1), ts);
+                AppendMarkerVertex(stereoInput, blWS, float2(1, 0), ts);
+                AppendMarkerVertex(stereoInput, trWS, float2(0, 1), ts);
+                AppendMarkerVertex(stereoInput, brWS, float2(0, 0), ts);
 
                 ts.RestartStrip();
             }
 
-            void EmitDirectMarkers(inout TriangleStream<g2f> ts) {
+            void EmitDirectMarkers(v2g stereoInput, inout TriangleStream<g2f> ts) {
                 if (_SPS_MarkerOpacity <= 0.001 || _SPS_MarkerTint.a <= 0.001) return;
 
                 int maxPlanes = clamp((int)round(_SPS_DebugMaxPlanes), 1, SPS_DEBUG_PLANES_MAX);
                 float3 originWS = mul(unity_ObjectToWorld, float4(0, 0, 0, 1)).xyz;
                 SpsTexture tex = SPS_GET_TEX(_VFGridFinal);
-                SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS];
+                SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS] = {
+                    SPS_DEBUG_DIRECT_ZERO_16,
+                    SPS_DEBUG_DIRECT_ZERO_8
+                };
                 uint count = sps_debug_direct_collect(tex, SPS_DEBUG_PRODUCT_ANY, originWS, (uint)maxPlanes, records);
 
-                [loop]
+                [unroll]
                 for (int resultIndex = 0; resultIndex < SPS_DEBUG_PLANES_MAX; resultIndex++) {
                     if ((uint)resultIndex >= count) break;
-                    EmitMarkerQuad(records[resultIndex].world, ts);
+                    EmitMarkerQuad(stereoInput, records[resultIndex].world, ts);
                 }
             }
 
@@ -160,7 +161,7 @@ Shader "Hidden/VRCFury/SpsDebugTargetPlanes" {
                 if (primitiveId != 0u) return;
                 if (_SPS_MarkerOpacity <= 0.001 || _SPS_MarkerTint.a <= 0.001) return;
 
-                EmitDirectMarkers(ts);
+                EmitDirectMarkers(IN[0], ts);
             }
 
             fixed4 frag(g2f i) : SV_Target {
@@ -169,7 +170,10 @@ Shader "Hidden/VRCFury/SpsDebugTargetPlanes" {
                 if (_VRChatMirrorMode > 0.5) uv.x = 1.0 - uv.x;
                 uv = TRANSFORM_TEX(uv, _SPS_MarkerTexture);
                 fixed4 texCol = tex2D(_SPS_MarkerTexture, uv);
-                fixed4 color = texCol * i.col;
+                fixed4 color = texCol * fixed4(
+                    _SPS_MarkerTint.rgb,
+                    saturate(_SPS_MarkerTint.a * _SPS_MarkerOpacity)
+                );
                 clip(color.a - _SPS_MarkerCutoff);
                 color.a = 1.0;
                 return color;

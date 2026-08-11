@@ -60,7 +60,6 @@ Shader "Hidden/VRCFury/SpsDebugLines" {
 
             struct g2f {
                 float4 pos : SV_POSITION;
-                fixed4 col : COLOR0;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
@@ -93,11 +92,14 @@ Shader "Hidden/VRCFury/SpsDebugLines" {
                 }
             }
 
-            fixed4 MakeLineColor(float3 rgb) {
-                return fixed4(saturate(rgb), saturate(_SPS_LineOpacity));
+            void AppendLineVertex(v2g stereoInput, float3 worldPos, inout TriangleStream<g2f> ts) {
+                g2f o = (g2f)0;
+                o.pos = UnityWorldToClipPos(worldPos);
+                UNITY_TRANSFER_VERTEX_OUTPUT_STEREO(stereoInput, o);
+                ts.Append(o);
             }
 
-            void EmitWorldLine(float3 aWS, float3 bWS, float3 rgb, inout TriangleStream<g2f> ts) {
+            void EmitWorldLine(v2g stereoInput, float3 aWS, float3 bWS, inout TriangleStream<g2f> ts) {
                 float3 mid = 0.5 * (aWS + bWS);
                 float3 camPos = GetCenterEyePos();
 
@@ -110,31 +112,30 @@ Shader "Hidden/VRCFury/SpsDebugLines" {
                 float3 bL = bWS - off;
                 float3 bR = bWS + off;
 
-                g2f o;
-                UNITY_INITIALIZE_OUTPUT(g2f, o);
-                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-                o.col = MakeLineColor(rgb);
-
-                o.pos = UnityWorldToClipPos(aL); ts.Append(o);
-                o.pos = UnityWorldToClipPos(aR); ts.Append(o);
-                o.pos = UnityWorldToClipPos(bL); ts.Append(o);
-                o.pos = UnityWorldToClipPos(bR); ts.Append(o);
+                AppendLineVertex(stereoInput, aL, ts);
+                AppendLineVertex(stereoInput, aR, ts);
+                AppendLineVertex(stereoInput, bL, ts);
+                AppendLineVertex(stereoInput, bR, ts);
                 ts.RestartStrip();
             }
 
-            void EmitDirectLines(inout TriangleStream<g2f> ts) {
+            void EmitDirectLines(v2g stereoInput, inout TriangleStream<g2f> ts) {
                 float3 rootWS = mul(unity_ObjectToWorld, float4(0, 0, 0, 1)).xyz;
                 int maxLines = clamp((int)round(_SPS_DebugMaxLines), 1, SPS_DEBUG_LINES_MAX);
                 SpsTexture tex = SPS_GET_TEX(_VFGridFinal);
-                SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS];
+                SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS] = {
+                    SPS_DEBUG_DIRECT_ZERO_16,
+                    SPS_DEBUG_DIRECT_ZERO_8,
+                    SPS_DEBUG_DIRECT_ZERO_4
+                };
                 uint count = sps_debug_direct_collect(tex, SPS_DEBUG_PRODUCT_ANY, rootWS, (uint)maxLines, records);
 
-                [loop]
+                [unroll]
                 for (int resultIndex = 0; resultIndex < SPS_DEBUG_LINES_MAX; resultIndex++) {
                     if ((uint)resultIndex >= count) break;
                     float3 targetWS = records[resultIndex].world;
                     if (dot(targetWS - rootWS, targetWS - rootWS) >= 0.000001) {
-                        EmitWorldLine(rootWS, targetWS, _SPS_LineColor.rgb, ts);
+                        EmitWorldLine(stereoInput, rootWS, targetWS, ts);
                     }
                 }
             }
@@ -146,12 +147,12 @@ Shader "Hidden/VRCFury/SpsDebugLines" {
                 if (primitiveId != 0u) return;
                 if (_SPS_LineOpacity <= 0.001) return;
 
-                EmitDirectLines(ts);
+                EmitDirectLines(IN[0], ts);
             }
 
             fixed4 frag(g2f i) : SV_Target {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
-                return i.col;
+                return fixed4(saturate(_SPS_LineColor.rgb), saturate(_SPS_LineOpacity));
             }
             ENDCG
         }

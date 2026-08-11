@@ -142,7 +142,9 @@ Shader "Hidden/VRCFury/SpsDebugAutoInspector" {
                 float3 panelWorld = mul(unity_ObjectToWorld, float4(0, 0, 0, 1)).xyz;
                 uint filter = min((uint)round(_SPS_DebugProduct), SPS_DEBUG_PRODUCT_PLUG);
                 uint limit = min(max((uint)round(_SPS_DebugCacheRecords), 1u), SPS_DEBUG_DIRECT_MAX_RESULTS);
-                SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS];
+                SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS] = {
+                    SPS_DEBUG_DIRECT_ZERO_128
+                };
                 uint count = sps_debug_direct_collect(tex, filter, panelWorld, limit, records);
                 uint selectedIndex = count == 0u
                     ? 0u

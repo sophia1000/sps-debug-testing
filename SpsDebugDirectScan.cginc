@@ -17,6 +17,15 @@ struct SpsDebugDirectRecord {
     float3 world;
 };
 
+#define SPS_DEBUG_DIRECT_ZERO_RECORD (SpsDebugDirectRecord)0
+#define SPS_DEBUG_DIRECT_ZERO_2 SPS_DEBUG_DIRECT_ZERO_RECORD, SPS_DEBUG_DIRECT_ZERO_RECORD
+#define SPS_DEBUG_DIRECT_ZERO_4 SPS_DEBUG_DIRECT_ZERO_2, SPS_DEBUG_DIRECT_ZERO_2
+#define SPS_DEBUG_DIRECT_ZERO_8 SPS_DEBUG_DIRECT_ZERO_4, SPS_DEBUG_DIRECT_ZERO_4
+#define SPS_DEBUG_DIRECT_ZERO_16 SPS_DEBUG_DIRECT_ZERO_8, SPS_DEBUG_DIRECT_ZERO_8
+#define SPS_DEBUG_DIRECT_ZERO_32 SPS_DEBUG_DIRECT_ZERO_16, SPS_DEBUG_DIRECT_ZERO_16
+#define SPS_DEBUG_DIRECT_ZERO_64 SPS_DEBUG_DIRECT_ZERO_32, SPS_DEBUG_DIRECT_ZERO_32
+#define SPS_DEBUG_DIRECT_ZERO_128 SPS_DEBUG_DIRECT_ZERO_64, SPS_DEBUG_DIRECT_ZERO_64
+
 bool sps_debug_direct_candidate(
     SpsTexture tex,
     uint slot,
@@ -51,19 +60,11 @@ uint sps_debug_direct_collect(
     uint productFilter,
     float3 originWorld,
     uint resultLimit,
-    out SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS]
+    inout SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS]
 ) {
     resultLimit = min(max(resultLimit, 1u), (uint)SPS_DEBUG_DIRECT_MAX_RESULTS);
     uint count = 0u;
     uint slotCount = sps_socket_slot_count();
-
-    [loop]
-    for (uint clearIndex = 0u; clearIndex < SPS_DEBUG_DIRECT_MAX_RESULTS; clearIndex++) {
-        records[clearIndex].slot = 0u;
-        records[clearIndex].product = 0u;
-        records[clearIndex].distanceKey = 0u;
-        records[clearIndex].world = 0.0;
-    }
 
     [loop]
     for (uint slot = 0u; slot < SPS_SOCKET_MAX_SLOTS; slot++) {
@@ -74,8 +75,9 @@ uint sps_debug_direct_collect(
 
         uint low = 0u;
         uint high = count;
-        [loop]
-        while (low < high) {
+        [unroll]
+        for (uint searchStep = 0u; searchStep < 8u; searchStep++) {
+            if (low >= high) break;
             uint middle = (low + high) >> 1u;
             SpsDebugDirectRecord existing = records[middle];
             bool existingBefore = existing.distanceKey < candidate.distanceKey ||
@@ -92,7 +94,8 @@ uint sps_debug_direct_collect(
 
         uint moveIndex = count < resultLimit ? count : resultLimit - 1u;
         [loop]
-        while (moveIndex > insertIndex) {
+        for (uint shiftStep = 0u; shiftStep < SPS_DEBUG_DIRECT_MAX_RESULTS; shiftStep++) {
+            if (moveIndex <= insertIndex) break;
             records[moveIndex] = records[moveIndex - 1u];
             moveIndex--;
         }

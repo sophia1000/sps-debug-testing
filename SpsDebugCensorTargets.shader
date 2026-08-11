@@ -129,19 +129,30 @@ Shader "Hidden/VRCFury/SpsDebugCensorTargets" {
                 camUp = normalize(cross(towardCamera, camRight));
             }
 
-            void AppendCensorVertex(float3 worldPos, float2 localUV, inout g2f o, inout TriangleStream<g2f> stream) {
+            void AppendCensorVertex(
+                v2g stereoInput,
+                float3 worldPos,
+                float2 localUV,
+                inout TriangleStream<g2f> stream
+            ) {
+                g2f o = (g2f)0;
                 o.localUV = localUV;
                 o.pos = UnityWorldToClipPos(worldPos);
                 o.grabPos = ComputeGrabScreenPos(o.pos);
+                UNITY_TRANSFER_VERTEX_OUTPUT_STEREO(stereoInput, o);
                 stream.Append(o);
             }
 
-            void EmitCensorQuad(float3 targetWS, inout TriangleStream<g2f> stream) {
-                float3 camPos, camRight, camUp, towardCamera;
+            void EmitCensorQuad(v2g stereoInput, float3 targetWS, inout TriangleStream<g2f> stream) {
+                float3 camPos = 0.0;
+                float3 camRight = float3(1, 0, 0);
+                float3 camUp = float3(0, 1, 0);
+                float3 towardCamera = float3(0, 0, 1);
                 GetCenterEyeBasis(targetWS, camPos, camRight, camUp, towardCamera);
 
                 float radians = _SPS_CensorRotation * 0.01745329252;
-                float sineValue, cosineValue;
+                float sineValue = 0.0;
+                float cosineValue = 1.0;
                 sincos(radians, sineValue, cosineValue);
                 float3 rotatedRight = camRight * cosineValue + camUp * sineValue;
                 float3 rotatedUp = camUp * cosineValue - camRight * sineValue;
@@ -158,27 +169,27 @@ Shader "Hidden/VRCFury/SpsDebugCensorTargets" {
                 float3 trWS = anchorWS + rotatedRight * halfWidth + rotatedUp * halfHeight;
                 float3 brWS = anchorWS + rotatedRight * halfWidth - rotatedUp * halfHeight;
 
-                g2f o;
-                UNITY_INITIALIZE_OUTPUT(g2f, o);
-                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-                AppendCensorVertex(tlWS, float2(0, 1), o, stream);
-                AppendCensorVertex(blWS, float2(0, 0), o, stream);
-                AppendCensorVertex(trWS, float2(1, 1), o, stream);
-                AppendCensorVertex(brWS, float2(1, 0), o, stream);
+                AppendCensorVertex(stereoInput, tlWS, float2(0, 1), stream);
+                AppendCensorVertex(stereoInput, blWS, float2(0, 0), stream);
+                AppendCensorVertex(stereoInput, trWS, float2(1, 1), stream);
+                AppendCensorVertex(stereoInput, brWS, float2(1, 0), stream);
                 stream.RestartStrip();
             }
 
-            void EmitDirectCensors(inout TriangleStream<g2f> stream) {
+            void EmitDirectCensors(v2g stereoInput, inout TriangleStream<g2f> stream) {
                 int maxCensors = clamp((int)round(_SPS_DebugMaxCensors), 1, SPS_DEBUG_CENSOR_MAX);
                 float3 originWS = mul(unity_ObjectToWorld, float4(0, 0, 0, 1)).xyz;
                 SpsTexture tex = SPS_GET_TEX(_VFGridFinal);
-                SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS];
+                SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS] = {
+                    SPS_DEBUG_DIRECT_ZERO_16,
+                    SPS_DEBUG_DIRECT_ZERO_4
+                };
                 uint count = sps_debug_direct_collect(tex, SPS_DEBUG_PRODUCT_ANY, originWS, (uint)maxCensors, records);
 
-                [loop]
+                [unroll]
                 for (int resultIndex = 0; resultIndex < SPS_DEBUG_CENSOR_MAX; resultIndex++) {
                     if ((uint)resultIndex >= count) break;
-                    EmitCensorQuad(records[resultIndex].world, stream);
+                    EmitCensorQuad(stereoInput, records[resultIndex].world, stream);
                 }
             }
 
@@ -188,7 +199,7 @@ Shader "Hidden/VRCFury/SpsDebugCensorTargets" {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input[0]);
                 if (primitiveId != 0u) return;
                 if (_SPS_CensorOpacity <= 0.001) return;
-                EmitDirectCensors(stream);
+                EmitDirectCensors(input[0], stream);
             }
 
             float shape_distance(float2 uv) {

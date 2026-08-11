@@ -402,7 +402,9 @@ Shader "Hidden/VRCFury/SpsDebugCachedSlotTable" {
                 float3 panelWorld = mul(unity_ObjectToWorld, float4(0, 0, 0, 1)).xyz;
                 uint limit = scan_result_limit();
                 uint rows = visible_row_count();
-                SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS];
+                SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS] = {
+                    SPS_DEBUG_DIRECT_ZERO_128
+                };
                 uint count = sps_debug_direct_collect(tex, SPS_DEBUG_PRODUCT_ANY, panelWorld, limit, records);
                 uint first = display_start_index(count, rows);
 
