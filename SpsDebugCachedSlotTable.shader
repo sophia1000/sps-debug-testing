@@ -396,6 +396,7 @@ Shader "Hidden/VRCFury/SpsDebugCachedSlotTable" {
                 UNITY_SETUP_INSTANCE_ID(input[0]);
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input[0]);
                 if (primitiveId != 0u) return;
+                if (_SPS_DebugOpacity <= 0.001) return;
 
                 SpsTexture tex = SPS_GET_TEX(_VFGridFinal);
                 float3 panelWorld = mul(unity_ObjectToWorld, float4(0, 0, 0, 1)).xyz;

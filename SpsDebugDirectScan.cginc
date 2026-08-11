@@ -17,17 +17,6 @@ struct SpsDebugDirectRecord {
     float3 world;
 };
 
-bool sps_debug_direct_key_before(
-    uint distanceKey,
-    uint product,
-    uint slot,
-    SpsDebugDirectRecord other
-) {
-    if (distanceKey != other.distanceKey) return distanceKey < other.distanceKey;
-    if (product != other.product) return product < other.product;
-    return slot < other.slot;
-}
-
 bool sps_debug_direct_candidate(
     SpsTexture tex,
     uint slot,
@@ -57,19 +46,6 @@ bool sps_debug_direct_candidate(
     return true;
 }
 
-bool sps_debug_direct_duplicate(
-    SpsDebugDirectRecord candidate,
-    SpsDebugDirectRecord records[SPS_DEBUG_DIRECT_MAX_RESULTS],
-    uint count
-) {
-    [loop]
-    for (uint i = 0u; i < SPS_DEBUG_DIRECT_MAX_RESULTS; i++) {
-        if (i >= count) break;
-        if (records[i].product == candidate.product && records[i].distanceKey == candidate.distanceKey) return true;
-    }
-    return false;
-}
-
 uint sps_debug_direct_collect(
     SpsTexture tex,
     uint productFilter,
@@ -95,24 +71,33 @@ uint sps_debug_direct_collect(
 
         SpsDebugDirectRecord candidate;
         if (!sps_debug_direct_candidate(tex, slot, productFilter, originWorld, candidate)) continue;
-        if (sps_debug_direct_duplicate(candidate, records, count)) continue;
 
-        uint insertIndex = count;
+        uint low = 0u;
+        uint high = count;
         [loop]
-        while (insertIndex > 0u) {
-            uint previousIndex = insertIndex - 1u;
-            if (!sps_debug_direct_key_before(
-                candidate.distanceKey,
-                candidate.product,
-                candidate.slot,
-                records[previousIndex]
-            )) break;
-
-            if (insertIndex < resultLimit) records[insertIndex] = records[previousIndex];
-            insertIndex = previousIndex;
+        while (low < high) {
+            uint middle = (low + high) >> 1u;
+            SpsDebugDirectRecord existing = records[middle];
+            bool existingBefore = existing.distanceKey < candidate.distanceKey ||
+                (existing.distanceKey == candidate.distanceKey && existing.product < candidate.product);
+            if (existingBefore) low = middle + 1u;
+            else high = middle;
         }
 
-        if (insertIndex < resultLimit) records[insertIndex] = candidate;
+        uint insertIndex = low;
+        if (insertIndex < count &&
+            records[insertIndex].distanceKey == candidate.distanceKey &&
+            records[insertIndex].product == candidate.product) continue;
+        if (insertIndex >= resultLimit) continue;
+
+        uint moveIndex = count < resultLimit ? count : resultLimit - 1u;
+        [loop]
+        while (moveIndex > insertIndex) {
+            records[moveIndex] = records[moveIndex - 1u];
+            moveIndex--;
+        }
+
+        records[insertIndex] = candidate;
         if (count < resultLimit) count++;
     }
 
