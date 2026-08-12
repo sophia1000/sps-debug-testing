@@ -161,6 +161,7 @@ Shader "Hidden/VRCFury/SpsDebugCachedSlotTable" {
                 if (word == 22) { if (pos == 0) ch = 75; if (pos == 1) ch = 73; if (pos == 2) ch = 78; if (pos == 3) ch = 68; }
                 if (word == 23) { if (pos == 0) ch = 68; if (pos == 1) ch = 73; if (pos == 2) ch = 83; if (pos == 3) ch = 84; }
                 if (word == 24) { if (pos == 0) ch = 87; if (pos == 1) ch = 73; if (pos == 2) ch = 68; }
+                if (word == 25) { if (pos == 0) ch = 83; if (pos == 1) ch = 67; if (pos == 2) ch = 65; if (pos == 3) ch = 76; if (pos == 4) ch = 69; }
                 return ch;
             }
 
@@ -273,53 +274,53 @@ Shader "Hidden/VRCFury/SpsDebugCachedSlotTable" {
                 if (ch != 32) return ch;
 
                 if (row == 3) {
-                    if (col >= 1 && col < 5) return word_at(col, 1, 7);
-                    if (col >= 8 && col < 10) return word_at(col, 8, 8);
-                    if (col >= 19 && col < 23) return word_at(col, 19, 9);
-                    if (col >= 32 && col < 37) return word_at(col, 32, 10);
-                    if (col >= 61 && col < 64) return word_at(col, 61, 11);
-                    if (col >= 72 && col < 75) return word_at(col, 72, 24);
-                    if (col >= 82 && col < 86) return word_at(col, 82, 13);
-                    if (col >= 87 && col < 91) return word_at(col, 87, 23);
+                    if (col >= 1 && col < 6) return word_at(col, 1, 25);
+                    if (col >= 11 && col < 13) return word_at(col, 11, 8);
+                    if (col >= 22 && col < 26) return word_at(col, 22, 9);
+                    if (col >= 33 && col < 38) return word_at(col, 33, 10);
+                    if (col >= 63 && col < 66) return word_at(col, 63, 11);
+                    if (col >= 74 && col < 77) return word_at(col, 74, 24);
+                    if (col >= 84 && col < 88) return word_at(col, 84, 13);
+                    if (col >= 88 && col < 92) return word_at(col, 88, 23);
                     return 32;
                 }
 
                 if (row < TABLE_FIRST_ROW) return 32;
                 if (row >= TABLE_FIRST_ROW + (int)rows) return 32;
                 if (
-                    !(col >= 1 && col < 6) &&
-                    !(col >= 8 && col < 18) &&
-                    !(col >= 19 && col < 29) &&
-                    !(col >= 31 && col < 60) &&
-                    !(col >= 61 && col < 71) &&
-                    !(col >= 72 && col < 81) &&
-                    !(col >= 82 && col < 86) &&
-                    !(col >= 87 && col < 96)
+                    !(col >= 1 && col < 10) &&
+                    !(col >= 11 && col < 21) &&
+                    !(col >= 22 && col < 32) &&
+                    !(col >= 33 && col < 62) &&
+                    !(col >= 63 && col < 73) &&
+                    !(col >= 74 && col < 83) &&
+                    !(col >= 84 && col < 88) &&
+                    !(col >= 88 && col < 97)
                 ) return 32;
 
                 if (!table_cell_valid(tex, selectedSlot)) return 32;
                 SpsCell cell = sps_get_cell(tex, selectedSlot);
                 uint product = cell.read_uint(SPS_HEADER_PRODUCT_INDEX);
-                if (col >= 1 && col < 6) return uint_at(col, 1, (uint)selectedSlot, 5);
-                if (col >= 8 && col < 18) return uint_at(col, 8, cell.read_uint(SPS_HEADER_UNIQUE_ID_INDEX), UINT_W);
-                if (col >= 19 && col < 29) return uint_at(col, 19, cell.read_uint(SPS_HEADER_PLAYER_ID_INDEX), UINT_W);
-                if (col >= 31 && col < 60) return vec3_char(sps_cell_header_world(cell), col, 31);
-                if (col >= 61 && col < 71) {
+                if (col >= 1 && col < 10) return float_at(col, 1, sps_cell_header_scale(cell));
+                if (col >= 11 && col < 21) return uint_at(col, 11, cell.read_uint(SPS_HEADER_UNIQUE_ID_INDEX), UINT_W);
+                if (col >= 22 && col < 32) return uint_at(col, 22, cell.read_uint(SPS_HEADER_PLAYER_ID_INDEX), UINT_W);
+                if (col >= 33 && col < 62) return vec3_char(sps_cell_header_world(cell), col, 33);
+                if (col >= 63 && col < 73) {
                     if (product == SPS_DEBUG_PRODUCT_PLUG) {
-                        return float_at(col, 61, cell.read_float(sps_cell_pixel_index_from_payload_index(SPS_RESOLVER_METADATA_LENGTH_INDEX)));
+                        return float_at(col, 63, cell.read_float(sps_cell_pixel_index_from_payload_index(SPS_RESOLVER_METADATA_LENGTH_INDEX)));
                     }
-                    return uint_at(col, 61, cell.read_uint(sps_cell_pixel_index_from_payload_index(SPS_SOCKET_PAYLOAD_FLAGS)), UINT_W);
+                    return uint_at(col, 63, cell.read_uint(sps_cell_pixel_index_from_payload_index(SPS_SOCKET_PAYLOAD_FLAGS)), UINT_W);
                 }
-                if (product == SPS_DEBUG_PRODUCT_PLUG && col >= 72 && col < 81) {
+                if (product == SPS_DEBUG_PRODUCT_PLUG && col >= 74 && col < 83) {
                     float radius = cell.read_float(sps_cell_pixel_index_from_payload_index(SPS_RESOLVER_METADATA_RADIUS_INDEX));
-                    return float_at(col, 72, radius * 2.0);
+                    return float_at(col, 74, radius * 2.0);
                 }
-                if (col >= 82 && col < 86) {
-                    if (product == SPS_DEBUG_PRODUCT_PLUG) return word_at(col, 82, 15);
+                if (col >= 84 && col < 88) {
+                    if (product == SPS_DEBUG_PRODUCT_PLUG) return word_at(col, 84, 15);
                     uint flags = cell.read_uint(sps_cell_pixel_index_from_payload_index(SPS_SOCKET_PAYLOAD_FLAGS));
-                    return (flags & SPS_SOCKET_FLAG_HOLE) != 0u ? word_at(col, 82, 20) : word_at(col, 82, 21);
+                    return (flags & SPS_SOCKET_FLAG_HOLE) != 0u ? word_at(col, 84, 20) : word_at(col, 84, 21);
                 }
-                if (col >= 87 && col < 96) return float_at(col, 87, cell_distance(cell));
+                if (col >= 88 && col < 97) return float_at(col, 88, cell_distance(cell));
                 return 32;
             }
 
@@ -328,17 +329,17 @@ Shader "Hidden/VRCFury/SpsDebugCachedSlotTable" {
                 if (row == 1) return (col >= 1 && col < 49);
                 if (row == 2) return (col >= 1 && col < 39) || col == 41 || (col >= 42 && col <= 82);
                 if (row == 3) {
-                    return (col >= 1 && col < 5) || (col >= 8 && col < 10) ||
-                        (col >= 19 && col < 23) || (col >= 32 && col < 37) ||
-                        (col >= 61 && col < 64) || (col >= 72 && col < 75) ||
-                        (col >= 82 && col < 86) || (col >= 87 && col < 91);
+                    return (col >= 1 && col < 6) || (col >= 11 && col < 13) ||
+                        (col >= 22 && col < 26) || (col >= 33 && col < 38) ||
+                        (col >= 63 && col < 66) || (col >= 74 && col < 77) ||
+                        (col >= 84 && col < 92);
                 }
                 if (row < TABLE_FIRST_ROW) return false;
                 if (row >= TABLE_FIRST_ROW + (int)round(max(_SPS_DebugMaxRows, 1.0))) return false;
-                return (col >= 1 && col < 6) || (col >= 8 && col < 18) ||
-                    (col >= 19 && col < 29) || (col >= 31 && col < 60) ||
-                    (col >= 61 && col < 71) || (col >= 72 && col < 81) ||
-                    (col >= 82 && col < 86) || (col >= 87 && col < 96);
+                return (col >= 1 && col < 10) || (col >= 11 && col < 21) ||
+                    (col >= 22 && col < 32) || (col >= 33 && col < 62) ||
+                    (col >= 63 && col < 73) || (col >= 74 && col < 83) ||
+                    (col >= 84 && col < 97);
             }
 
             float font_alpha(int ascii, float2 local) {

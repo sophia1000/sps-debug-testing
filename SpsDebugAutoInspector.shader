@@ -322,7 +322,7 @@ Shader "Hidden/VRCFury/SpsDebugAutoInspector" {
                 if (row == 5) return col < 37;
                 if (row == 6) return col < 35;
                 if (row == 7) return col < 39;
-                if (row == 8) return col < 17;
+                if (row == 8) return col < 35;
                 if (row == 9) return col < 50;
                 if (row == 10 || row == 11) return col < 52;
                 if (row == 12) return col < 37;
@@ -380,6 +380,9 @@ Shader "Hidden/VRCFury/SpsDebugAutoInspector" {
                     if (col >= 1 && col < 5) return word_at(col, 1, 28);
                     if (col == 5) return 58;
                     if (col >= 7 && col < 16) return float_at(col, 7, cell.read_float(sps_cell_pixel_index_from_payload_index(SPS_RESOLVER_METADATA_SOCKET_FRACTION_INDEX)));
+                    if (col >= 19 && col < 24) return word_at(col, 19, 16);
+                    if (col == 24) return 58;
+                    if (col >= 26 && col < 35) return float_at(col, 26, sps_cell_header_scale(cell));
                 }
                 if (row >= 9 && row <= 13) {
                     int seg = row - 8;
