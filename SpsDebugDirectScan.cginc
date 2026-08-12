@@ -27,7 +27,7 @@ struct SpsDebugDirectRecord {
 #define SPS_DEBUG_DIRECT_ZERO_128 SPS_DEBUG_DIRECT_ZERO_64, SPS_DEBUG_DIRECT_ZERO_64
 
 bool sps_debug_direct_candidate(
-    SpsTexture tex,
+    SpsCell cell,
     uint slot,
     uint productFilter,
     float3 originWorld,
@@ -38,7 +38,6 @@ bool sps_debug_direct_candidate(
     record.distanceKey = 0u;
     record.world = 0.0;
 
-    SpsCell cell = sps_get_cell(tex, (int)slot);
     if (!sps_cell_check_magic(cell)) return false;
     if (cell.read_uint(SPS_HEADER_VENDOR_INDEX) != SPS_VENDOR_SPS) return false;
 
@@ -65,43 +64,63 @@ uint sps_debug_direct_collect(
     resultLimit = min(max(resultLimit, 1u), (uint)SPS_DEBUG_DIRECT_MAX_RESULTS);
     uint count = 0u;
     uint slotCount = sps_socket_slot_count();
+    uint columns = (uint)sps_cell_grid_columns();
+    uint groupCount = min(
+        (uint)SPS_CELL_DICTIONARY_GROUP_COUNT,
+        (slotCount + SPS_CELL_DICTIONARY_GROUP_SIZE - 1u) / SPS_CELL_DICTIONARY_GROUP_SIZE
+    );
 
     [loop]
-    for (uint slot = 0u; slot < SPS_SOCKET_MAX_SLOTS; slot++) {
-        if (slot >= slotCount) break;
+    for (uint group = 0u; group < groupCount; group++) {
+        bool groupUsed = all(SPS_READ_TEX(
+            tex,
+            uint2(group % SPS_CELL_DICTIONARY_GROUP_SIZE, group / SPS_CELL_DICTIONARY_GROUP_SIZE)
+        ) == SPS_CELL_DICTIONARY_MAGIC);
+        if (!groupUsed) continue;
 
-        SpsDebugDirectRecord candidate;
-        if (!sps_debug_direct_candidate(tex, slot, productFilter, originWorld, candidate)) continue;
-
-        uint low = 0u;
-        uint high = count;
-        [unroll]
-        for (uint searchStep = 0u; searchStep < 8u; searchStep++) {
-            if (low >= high) break;
-            uint middle = (low + high) >> 1u;
-            SpsDebugDirectRecord existing = records[middle];
-            bool existingBefore = existing.distanceKey < candidate.distanceKey ||
-                (existing.distanceKey == candidate.distanceKey && existing.product < candidate.product);
-            if (existingBefore) low = middle + 1u;
-            else high = middle;
-        }
-
-        uint insertIndex = low;
-        if (insertIndex < count &&
-            records[insertIndex].distanceKey == candidate.distanceKey &&
-            records[insertIndex].product == candidate.product) continue;
-        if (insertIndex >= resultLimit) continue;
-
-        uint moveIndex = count < resultLimit ? count : resultLimit - 1u;
+        uint groupStart = group * SPS_CELL_DICTIONARY_GROUP_SIZE;
         [loop]
-        for (uint shiftStep = 0u; shiftStep < SPS_DEBUG_DIRECT_MAX_RESULTS; shiftStep++) {
-            if (moveIndex <= insertIndex) break;
-            records[moveIndex] = records[moveIndex - 1u];
-            moveIndex--;
-        }
+        for (uint groupMember = 0u; groupMember < SPS_CELL_DICTIONARY_GROUP_SIZE; groupMember++) {
+            uint slot = groupStart + groupMember;
+            if (slot >= slotCount) break;
 
-        records[insertIndex] = candidate;
-        if (count < resultLimit) count++;
+            uint physicalIndex = slot + 1u;
+            uint2 physicalCell = uint2(physicalIndex % columns, physicalIndex / columns);
+            SpsCell cell = sps_get_cell_raw(tex, physicalCell * uint2(SPS_CELL_WIDTH, SPS_CELL_HEIGHT));
+
+            SpsDebugDirectRecord candidate;
+            if (!sps_debug_direct_candidate(cell, slot, productFilter, originWorld, candidate)) continue;
+
+            uint low = 0u;
+            uint high = count;
+            [unroll]
+            for (uint searchStep = 0u; searchStep < 8u; searchStep++) {
+                if (low >= high) break;
+                uint middle = (low + high) >> 1u;
+                SpsDebugDirectRecord existing = records[middle];
+                bool existingBefore = existing.distanceKey < candidate.distanceKey ||
+                    (existing.distanceKey == candidate.distanceKey && existing.product < candidate.product);
+                if (existingBefore) low = middle + 1u;
+                else high = middle;
+            }
+
+            uint insertIndex = low;
+            if (insertIndex < count &&
+                records[insertIndex].distanceKey == candidate.distanceKey &&
+                records[insertIndex].product == candidate.product) continue;
+            if (insertIndex >= resultLimit) continue;
+
+            uint moveIndex = count < resultLimit ? count : resultLimit - 1u;
+            [loop]
+            for (uint shiftStep = 0u; shiftStep < SPS_DEBUG_DIRECT_MAX_RESULTS; shiftStep++) {
+                if (moveIndex <= insertIndex) break;
+                records[moveIndex] = records[moveIndex - 1u];
+                moveIndex--;
+            }
+
+            records[insertIndex] = candidate;
+            if (count < resultLimit) count++;
+        }
     }
 
     return count;

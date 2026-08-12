@@ -120,8 +120,13 @@ Shader "Hidden/VRCFury/SpsDebugCensorTargets" {
             #endif
             }
 
-            void GetCenterEyeBasis(float3 targetWS, out float3 camPos, out float3 camRight, out float3 camUp, out float3 towardCamera) {
-                camPos = GetCenterEyePos();
+            void GetCenterEyeBasis(
+                float3 targetWS,
+                float3 camPos,
+                out float3 camRight,
+                out float3 camUp,
+                out float3 towardCamera
+            ) {
                 towardCamera = normalize(camPos - targetWS);
                 camRight = cross(float3(0, 1, 0), towardCamera);
                 float rightLength = length(camRight);
@@ -129,31 +134,44 @@ Shader "Hidden/VRCFury/SpsDebugCensorTargets" {
                 camUp = normalize(cross(towardCamera, camRight));
             }
 
+            bool QuadOutsideView(float4 tl, float4 bl, float4 tr, float4 br) {
+                float4 w = float4(tl.w, bl.w, tr.w, br.w);
+                if (all(w <= 0.00001)) return true;
+                if (any(w <= 0.00001)) return false;
+                float4 x = float4(tl.x, bl.x, tr.x, br.x);
+                float4 y = float4(tl.y, bl.y, tr.y, br.y);
+                return all(x < -w) || all(x > w) || all(y < -w) || all(y > w);
+            }
+
             void AppendCensorVertex(
                 v2g stereoInput,
-                float3 worldPos,
+                float4 clipPos,
                 float2 localUV,
                 inout TriangleStream<g2f> stream
             ) {
                 g2f o = (g2f)0;
                 o.localUV = localUV;
-                o.pos = UnityWorldToClipPos(worldPos);
+                o.pos = clipPos;
                 o.grabPos = ComputeGrabScreenPos(o.pos);
                 UNITY_TRANSFER_VERTEX_OUTPUT_STEREO(stereoInput, o);
                 stream.Append(o);
             }
 
-            void EmitCensorQuad(v2g stereoInput, float3 targetWS, inout TriangleStream<g2f> stream) {
-                float3 camPos = 0.0;
+            void EmitCensorQuad(
+                v2g stereoInput,
+                float3 camPos,
+                float sineValue,
+                float cosineValue,
+                float halfWidth,
+                float halfHeight,
+                float3 targetWS,
+                inout TriangleStream<g2f> stream
+            ) {
                 float3 camRight = float3(1, 0, 0);
                 float3 camUp = float3(0, 1, 0);
                 float3 towardCamera = float3(0, 0, 1);
                 GetCenterEyeBasis(targetWS, camPos, camRight, camUp, towardCamera);
 
-                float radians = _SPS_CensorRotation * 0.01745329252;
-                float sineValue = 0.0;
-                float cosineValue = 1.0;
-                sincos(radians, sineValue, cosineValue);
                 float3 rotatedRight = camRight * cosineValue + camUp * sineValue;
                 float3 rotatedUp = camUp * cosineValue - camRight * sineValue;
 
@@ -161,18 +179,22 @@ Shader "Hidden/VRCFury/SpsDebugCensorTargets" {
                     + rotatedRight * _SPS_CensorOffset.x
                     + rotatedUp * _SPS_CensorOffset.y
                     + towardCamera * _SPS_CensorOffset.z;
-                float halfWidth = max(abs(_SPS_CensorWidth), 0.001) * 0.5;
-                float halfHeight = max(abs(_SPS_CensorHeight), 0.001) * 0.5;
 
                 float3 tlWS = anchorWS - rotatedRight * halfWidth + rotatedUp * halfHeight;
                 float3 blWS = anchorWS - rotatedRight * halfWidth - rotatedUp * halfHeight;
                 float3 trWS = anchorWS + rotatedRight * halfWidth + rotatedUp * halfHeight;
                 float3 brWS = anchorWS + rotatedRight * halfWidth - rotatedUp * halfHeight;
 
-                AppendCensorVertex(stereoInput, tlWS, float2(0, 1), stream);
-                AppendCensorVertex(stereoInput, blWS, float2(0, 0), stream);
-                AppendCensorVertex(stereoInput, trWS, float2(1, 1), stream);
-                AppendCensorVertex(stereoInput, brWS, float2(1, 0), stream);
+                float4 tlClip = UnityWorldToClipPos(tlWS);
+                float4 blClip = UnityWorldToClipPos(blWS);
+                float4 trClip = UnityWorldToClipPos(trWS);
+                float4 brClip = UnityWorldToClipPos(brWS);
+                if (QuadOutsideView(tlClip, blClip, trClip, brClip)) return;
+
+                AppendCensorVertex(stereoInput, tlClip, float2(0, 1), stream);
+                AppendCensorVertex(stereoInput, blClip, float2(0, 0), stream);
+                AppendCensorVertex(stereoInput, trClip, float2(1, 1), stream);
+                AppendCensorVertex(stereoInput, brClip, float2(1, 0), stream);
                 stream.RestartStrip();
             }
 
@@ -185,11 +207,27 @@ Shader "Hidden/VRCFury/SpsDebugCensorTargets" {
                     SPS_DEBUG_DIRECT_ZERO_4
                 };
                 uint count = sps_debug_direct_collect(tex, SPS_DEBUG_PRODUCT_ANY, originWS, (uint)maxCensors, records);
+                float3 camPos = GetCenterEyePos();
+                float radians = _SPS_CensorRotation * 0.01745329252;
+                float sineValue = 0.0;
+                float cosineValue = 1.0;
+                sincos(radians, sineValue, cosineValue);
+                float halfWidth = max(abs(_SPS_CensorWidth), 0.001) * 0.5;
+                float halfHeight = max(abs(_SPS_CensorHeight), 0.001) * 0.5;
 
                 [unroll]
                 for (int resultIndex = 0; resultIndex < SPS_DEBUG_CENSOR_MAX; resultIndex++) {
                     if ((uint)resultIndex >= count) break;
-                    EmitCensorQuad(stereoInput, records[resultIndex].world, stream);
+                    EmitCensorQuad(
+                        stereoInput,
+                        camPos,
+                        sineValue,
+                        cosineValue,
+                        halfWidth,
+                        halfHeight,
+                        records[resultIndex].world,
+                        stream
+                    );
                 }
             }
 
@@ -199,6 +237,11 @@ Shader "Hidden/VRCFury/SpsDebugCensorTargets" {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input[0]);
                 if (primitiveId != 0u) return;
                 if (_SPS_CensorOpacity <= 0.001) return;
+            #if defined(_SPS_CENSORMODE_PIXELATE) || defined(_SPS_CENSORMODE_BOXBLUR) || defined(_SPS_CENSORMODE_GAUSSIANBLUR)
+                if (_SPS_CensorEffectTint.a <= 0.001) return;
+            #else
+                if (_SPS_CensorSolidColor.a <= 0.001) return;
+            #endif
                 EmitDirectCensors(input[0], stream);
             }
 
@@ -229,54 +272,63 @@ Shader "Hidden/VRCFury/SpsDebugCensorTargets" {
                 return UNITY_SAMPLE_SCREENSPACE_TEXTURE(_PoiGrab2, saturate(uv));
             }
 
-            float blur_grid_axis(int sampleIndex, int sampleCount) {
-                if (sampleCount <= 1) return 0.0;
-                return ((float)sampleIndex / (float)(sampleCount - 1)) * 2.0 - 1.0;
-            }
-
             float4 sample_box_blur(float2 uv) {
                 int sampleCount = clamp((int)round(_SPS_CensorBoxSamples), 1, SPS_DEBUG_BLUR_SAMPLES_MAX);
-                float2 stepUV = _PoiGrab2_TexelSize.xy
-                    * max(_SPS_CensorBlurRadius, 0.5)
-                    * max(_SPS_CensorBoxRadiusScale, 0.1);
-                float4 sum = 0.0;
-                [loop]
-                for (int y = 0; y < SPS_DEBUG_BLUR_SAMPLES_MAX; y++) {
-                    if (y >= sampleCount) break;
-                    float sampleY = blur_grid_axis(y, sampleCount);
+                float4 result = 0.0;
+                if (sampleCount <= 1) {
+                    result = sample_scene(uv);
+                } else {
+                    float2 stepUV = _PoiGrab2_TexelSize.xy
+                        * max(_SPS_CensorBlurRadius, 0.5)
+                        * max(_SPS_CensorBoxRadiusScale, 0.1);
+                    float axisScale = 2.0 / (float)(sampleCount - 1);
+                    float4 sum = 0.0;
                     [loop]
-                    for (int x = 0; x < SPS_DEBUG_BLUR_SAMPLES_MAX; x++) {
-                        if (x >= sampleCount) break;
-                        float2 sampleOffset = float2(blur_grid_axis(x, sampleCount), sampleY);
-                        sum += sample_scene(uv + sampleOffset * stepUV);
+                    for (int y = 0; y < SPS_DEBUG_BLUR_SAMPLES_MAX; y++) {
+                        if (y >= sampleCount) break;
+                        float sampleY = (float)y * axisScale - 1.0;
+                        [loop]
+                        for (int x = 0; x < SPS_DEBUG_BLUR_SAMPLES_MAX; x++) {
+                            if (x >= sampleCount) break;
+                            float2 sampleOffset = float2((float)x * axisScale - 1.0, sampleY);
+                            sum += sample_scene(uv + sampleOffset * stepUV);
+                        }
                     }
+                    result = sum / (float)(sampleCount * sampleCount);
                 }
-                return sum / (float)(sampleCount * sampleCount);
+                return result;
             }
 
             float4 sample_gaussian_blur(float2 uv) {
                 int sampleCount = clamp((int)round(_SPS_CensorGaussianSamples), 1, SPS_DEBUG_BLUR_SAMPLES_MAX);
-                float2 stepUV = _PoiGrab2_TexelSize.xy
-                    * max(_SPS_CensorBlurRadius, 0.5)
-                    * max(_SPS_CensorGaussianRadiusScale, 0.1);
-                float sigma = max(_SPS_CensorGaussianSigma, 0.1);
-                float inverseTwoSigmaSquared = 0.5 / (sigma * sigma);
-                float4 sum = 0.0;
-                float weightSum = 0.0;
-                [loop]
-                for (int y = 0; y < SPS_DEBUG_BLUR_SAMPLES_MAX; y++) {
-                    if (y >= sampleCount) break;
-                    float sampleY = blur_grid_axis(y, sampleCount);
+                float4 result = 0.0;
+                if (sampleCount <= 1) {
+                    result = sample_scene(uv);
+                } else {
+                    float2 stepUV = _PoiGrab2_TexelSize.xy
+                        * max(_SPS_CensorBlurRadius, 0.5)
+                        * max(_SPS_CensorGaussianRadiusScale, 0.1);
+                    float sigma = max(_SPS_CensorGaussianSigma, 0.1);
+                    float inverseTwoSigmaSquared = 0.5 / (sigma * sigma);
+                    float axisScale = 2.0 / (float)(sampleCount - 1);
+                    float4 sum = 0.0;
+                    float weightSum = 0.0;
                     [loop]
-                    for (int x = 0; x < SPS_DEBUG_BLUR_SAMPLES_MAX; x++) {
-                        if (x >= sampleCount) break;
-                        float2 sampleOffset = float2(blur_grid_axis(x, sampleCount), sampleY);
-                        float weight = exp2(-dot(sampleOffset, sampleOffset) * inverseTwoSigmaSquared * 1.44269504);
-                        sum += sample_scene(uv + sampleOffset * stepUV) * weight;
-                        weightSum += weight;
+                    for (int y = 0; y < SPS_DEBUG_BLUR_SAMPLES_MAX; y++) {
+                        if (y >= sampleCount) break;
+                        float sampleY = (float)y * axisScale - 1.0;
+                        [loop]
+                        for (int x = 0; x < SPS_DEBUG_BLUR_SAMPLES_MAX; x++) {
+                            if (x >= sampleCount) break;
+                            float2 sampleOffset = float2((float)x * axisScale - 1.0, sampleY);
+                            float weight = exp2(-dot(sampleOffset, sampleOffset) * inverseTwoSigmaSquared * 1.44269504);
+                            sum += sample_scene(uv + sampleOffset * stepUV) * weight;
+                            weightSum += weight;
+                        }
                     }
+                    result = sum / max(weightSum, 0.00001);
                 }
-                return sum / max(weightSum, 0.00001);
+                return result;
             }
 
             fixed4 frag(g2f input) : SV_Target {

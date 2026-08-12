@@ -81,27 +81,24 @@ Shader "Hidden/VRCFury/SpsDebugLines" {
             #endif
             }
 
-            void GetCenterEyeBasis(float3 anchorWS, out float3 camPos, out float3 camRight, out float3 camUp) {
-                camPos = GetCenterEyePos();
-                float3 worldUp = float3(0, 1, 0);
-                float3 viewDir = normalize(camPos - anchorWS);
-                camRight = normalize(cross(worldUp, viewDir));
-                camUp = worldUp;
-                if (abs(camRight.x) + abs(camRight.y) + abs(camRight.z) < 0.0001) {
-                    camRight = normalize(UNITY_MATRIX_I_V[0].xyz);
-                }
+            bool QuadOutsideView(float4 a, float4 b, float4 c, float4 d) {
+                float4 w = float4(a.w, b.w, c.w, d.w);
+                if (all(w <= 0.00001)) return true;
+                if (any(w <= 0.00001)) return false;
+                float4 x = float4(a.x, b.x, c.x, d.x);
+                float4 y = float4(a.y, b.y, c.y, d.y);
+                return all(x < -w) || all(x > w) || all(y < -w) || all(y > w);
             }
 
-            void AppendLineVertex(v2g stereoInput, float3 worldPos, inout TriangleStream<g2f> ts) {
+            void AppendLineVertex(v2g stereoInput, float4 clipPos, inout TriangleStream<g2f> ts) {
                 g2f o = (g2f)0;
-                o.pos = UnityWorldToClipPos(worldPos);
+                o.pos = clipPos;
                 UNITY_TRANSFER_VERTEX_OUTPUT_STEREO(stereoInput, o);
                 ts.Append(o);
             }
 
-            void EmitWorldLine(v2g stereoInput, float3 aWS, float3 bWS, inout TriangleStream<g2f> ts) {
+            void EmitWorldLine(v2g stereoInput, float3 camPos, float3 aWS, float3 bWS, inout TriangleStream<g2f> ts) {
                 float3 mid = 0.5 * (aWS + bWS);
-                float3 camPos = GetCenterEyePos();
 
                 float3 n = cross(mid - camPos, aWS - bWS);
                 float nLen = max(length(n), 0.000001);
@@ -112,10 +109,16 @@ Shader "Hidden/VRCFury/SpsDebugLines" {
                 float3 bL = bWS - off;
                 float3 bR = bWS + off;
 
-                AppendLineVertex(stereoInput, aL, ts);
-                AppendLineVertex(stereoInput, aR, ts);
-                AppendLineVertex(stereoInput, bL, ts);
-                AppendLineVertex(stereoInput, bR, ts);
+                float4 aLClip = UnityWorldToClipPos(aL);
+                float4 aRClip = UnityWorldToClipPos(aR);
+                float4 bLClip = UnityWorldToClipPos(bL);
+                float4 bRClip = UnityWorldToClipPos(bR);
+                if (QuadOutsideView(aLClip, aRClip, bLClip, bRClip)) return;
+
+                AppendLineVertex(stereoInput, aLClip, ts);
+                AppendLineVertex(stereoInput, aRClip, ts);
+                AppendLineVertex(stereoInput, bLClip, ts);
+                AppendLineVertex(stereoInput, bRClip, ts);
                 ts.RestartStrip();
             }
 
@@ -129,13 +132,14 @@ Shader "Hidden/VRCFury/SpsDebugLines" {
                     SPS_DEBUG_DIRECT_ZERO_4
                 };
                 uint count = sps_debug_direct_collect(tex, SPS_DEBUG_PRODUCT_ANY, rootWS, (uint)maxLines, records);
+                float3 camPos = GetCenterEyePos();
 
                 [unroll]
                 for (int resultIndex = 0; resultIndex < SPS_DEBUG_LINES_MAX; resultIndex++) {
                     if ((uint)resultIndex >= count) break;
                     float3 targetWS = records[resultIndex].world;
                     if (dot(targetWS - rootWS, targetWS - rootWS) >= 0.000001) {
-                        EmitWorldLine(stereoInput, rootWS, targetWS, ts);
+                        EmitWorldLine(stereoInput, camPos, rootWS, targetWS, ts);
                     }
                 }
             }

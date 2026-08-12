@@ -90,54 +90,70 @@ Shader "Hidden/VRCFury/SpsDebugTargetPlanes" {
             #endif
             }
 
-            void GetCenterEyeBasis(float3 anchorWS, out float3 camPos, out float3 camRight, out float3 camUp) {
-                camPos = GetCenterEyePos();
+            void GetCenterEyeBasis(float3 anchorWS, float3 camPos, out float3 camRight, out float3 camUp) {
                 float3 worldUp = float3(0, 1, 0);
                 float3 viewDir = normalize(camPos - anchorWS);
-                camRight = normalize(cross(worldUp, viewDir));
+                camRight = cross(worldUp, viewDir);
+                float rightLength = length(camRight);
+                camRight = rightLength > 0.0001 ? camRight / rightLength : normalize(UNITY_MATRIX_I_V[0].xyz);
                 camUp = worldUp;
-                if (abs(camRight.x) + abs(camRight.y) + abs(camRight.z) < 0.0001) {
-                    camRight = normalize(UNITY_MATRIX_I_V[0].xyz);
-                }
+            }
+
+            bool QuadOutsideView(float4 tl, float4 bl, float4 tr, float4 br) {
+                float4 w = float4(tl.w, bl.w, tr.w, br.w);
+                if (all(w <= 0.00001)) return true;
+                if (any(w <= 0.00001)) return false;
+                float4 x = float4(tl.x, bl.x, tr.x, br.x);
+                float4 y = float4(tl.y, bl.y, tr.y, br.y);
+                return all(x < -w) || all(x > w) || all(y < -w) || all(y > w);
             }
 
             void AppendMarkerVertex(
                 v2g stereoInput,
-                float3 worldPos,
+                float4 clipPos,
                 float2 uv,
                 inout TriangleStream<g2f> ts
             ) {
                 g2f o = (g2f)0;
-                o.pos = UnityWorldToClipPos(worldPos);
-                o.uv = uv;
+                o.pos = clipPos;
+                if (_VRChatMirrorMode > 0.5) uv.x = 1.0 - uv.x;
+                o.uv = TRANSFORM_TEX(uv, _SPS_MarkerTexture);
                 UNITY_TRANSFER_VERTEX_OUTPUT_STEREO(stereoInput, o);
                 ts.Append(o);
             }
 
-            void EmitMarkerQuad(v2g stereoInput, float3 targetWS, inout TriangleStream<g2f> ts) {
+            void EmitMarkerQuad(
+                v2g stereoInput,
+                float3 camPos,
+                float halfSize,
+                float3 targetWS,
+                inout TriangleStream<g2f> ts
+            ) {
                 float3 anchorWS = targetWS + float3(0, _SPS_MarkerOffset, 0);
-                float3 camPos = 0.0;
                 float3 camRight = float3(1, 0, 0);
                 float3 camUp = float3(0, 1, 0);
                 GetCenterEyeBasis(anchorWS, camPos, camRight, camUp);
 
-                float halfSize = max(_SPS_MarkerSize, 0.001) * 0.5;
                 float3 tlWS = anchorWS + (-halfSize) * camRight + ( halfSize) * camUp;
                 float3 blWS = anchorWS + (-halfSize) * camRight + (-halfSize) * camUp;
                 float3 trWS = anchorWS + ( halfSize) * camRight + ( halfSize) * camUp;
                 float3 brWS = anchorWS + ( halfSize) * camRight + (-halfSize) * camUp;
 
-                AppendMarkerVertex(stereoInput, tlWS, float2(1, 1), ts);
-                AppendMarkerVertex(stereoInput, blWS, float2(1, 0), ts);
-                AppendMarkerVertex(stereoInput, trWS, float2(0, 1), ts);
-                AppendMarkerVertex(stereoInput, brWS, float2(0, 0), ts);
+                float4 tlClip = UnityWorldToClipPos(tlWS);
+                float4 blClip = UnityWorldToClipPos(blWS);
+                float4 trClip = UnityWorldToClipPos(trWS);
+                float4 brClip = UnityWorldToClipPos(brWS);
+                if (QuadOutsideView(tlClip, blClip, trClip, brClip)) return;
+
+                AppendMarkerVertex(stereoInput, tlClip, float2(1, 1), ts);
+                AppendMarkerVertex(stereoInput, blClip, float2(1, 0), ts);
+                AppendMarkerVertex(stereoInput, trClip, float2(0, 1), ts);
+                AppendMarkerVertex(stereoInput, brClip, float2(0, 0), ts);
 
                 ts.RestartStrip();
             }
 
             void EmitDirectMarkers(v2g stereoInput, inout TriangleStream<g2f> ts) {
-                if (_SPS_MarkerOpacity <= 0.001 || _SPS_MarkerTint.a <= 0.001) return;
-
                 int maxPlanes = clamp((int)round(_SPS_DebugMaxPlanes), 1, SPS_DEBUG_PLANES_MAX);
                 float3 originWS = mul(unity_ObjectToWorld, float4(0, 0, 0, 1)).xyz;
                 SpsTexture tex = SPS_GET_TEX(_VFGridFinal);
@@ -146,11 +162,13 @@ Shader "Hidden/VRCFury/SpsDebugTargetPlanes" {
                     SPS_DEBUG_DIRECT_ZERO_8
                 };
                 uint count = sps_debug_direct_collect(tex, SPS_DEBUG_PRODUCT_ANY, originWS, (uint)maxPlanes, records);
+                float3 camPos = GetCenterEyePos();
+                float halfSize = max(_SPS_MarkerSize, 0.001) * 0.5;
 
                 [unroll]
                 for (int resultIndex = 0; resultIndex < SPS_DEBUG_PLANES_MAX; resultIndex++) {
                     if ((uint)resultIndex >= count) break;
-                    EmitMarkerQuad(stereoInput, records[resultIndex].world, ts);
+                    EmitMarkerQuad(stereoInput, camPos, halfSize, records[resultIndex].world, ts);
                 }
             }
 
@@ -160,16 +178,14 @@ Shader "Hidden/VRCFury/SpsDebugTargetPlanes" {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(IN[0]);
                 if (primitiveId != 0u) return;
                 if (_SPS_MarkerOpacity <= 0.001 || _SPS_MarkerTint.a <= 0.001) return;
+                if (_SPS_MarkerTint.a * _SPS_MarkerOpacity < _SPS_MarkerCutoff) return;
 
                 EmitDirectMarkers(IN[0], ts);
             }
 
             fixed4 frag(g2f i) : SV_Target {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
-                float2 uv = i.uv;
-                if (_VRChatMirrorMode > 0.5) uv.x = 1.0 - uv.x;
-                uv = TRANSFORM_TEX(uv, _SPS_MarkerTexture);
-                fixed4 texCol = tex2D(_SPS_MarkerTexture, uv);
+                fixed4 texCol = tex2D(_SPS_MarkerTexture, i.uv);
                 fixed4 color = texCol * fixed4(
                     _SPS_MarkerTint.rgb,
                     saturate(_SPS_MarkerTint.a * _SPS_MarkerOpacity)
