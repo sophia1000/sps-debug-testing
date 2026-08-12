@@ -52,6 +52,7 @@ Shader "Hidden/VRCFury/SpsDebugCachedSlotTable" {
             #define FLOAT_W 9
             #define TABLE_FIRST_ROW 4
             sampler2D _SPS_DebugFontAtlas;
+            float4 _SPS_DebugFontAtlas_TexelSize;
             float _SPS_DebugCacheRecords;
             float _SPS_DebugScroll;
             float _SPS_DebugMaxRows;
@@ -342,12 +343,14 @@ Shader "Hidden/VRCFury/SpsDebugCachedSlotTable" {
 
             float font_alpha(int ascii, float2 local) {
                 if (ascii < 33 || ascii > 126) return 0.0;
+                float verticalGuard = max(fwidth(local.y), _SPS_DebugFontAtlas_TexelSize.y * FONT_ROWS * 1.5);
+                float verticalMask = smoothstep(0.0, verticalGuard, min(local.y, 1.0 - local.y));
                 int glyph = ascii - 32;
                 float2 cell = float2(glyph & 15, glyph >> 4);
                 float2 uv = float2((cell.x + local.x) / FONT_COLS, 1.0 - (cell.y + local.y) / FONT_ROWS);
                 float sdf = tex2D(_SPS_DebugFontAtlas, uv).a;
                 float width = max(fwidth(sdf) * max(_SPS_DebugFontSoftness, 0.01), 0.001);
-                return smoothstep(_SPS_DebugFontWeight - width, _SPS_DebugFontWeight + width, sdf);
+                return smoothstep(_SPS_DebugFontWeight - width, _SPS_DebugFontWeight + width, sdf) * verticalMask;
             }
 
             void emit_table_vertex(
