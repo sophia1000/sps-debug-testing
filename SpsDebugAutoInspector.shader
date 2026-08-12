@@ -303,9 +303,9 @@ Shader "Hidden/VRCFury/SpsDebugAutoInspector" {
                 if (row == 2) {
                     if (col >= 1 && col < 4) return word_at(col, 1, 36);
                     if (col == 4) return 58;
-                    if (col >= 6 && col < 11) return uint_at(col, 6, count > 0u ? selectedIndex + 1u : 0u, 5);
-                    if (col == 11) return 47;
-                    if (col >= 13 && col < 18) return uint_at(col, 13, count, 5);
+                    if (col >= 6 && col < 9) return uint_at(col, 6, count > 0u ? selectedIndex + 1u : 0u, 3);
+                    if (col == 9) return 47;
+                    if (col >= 10 && col < 13) return uint_at(col, 10, count, 3);
                     if (col >= 20 && col < 24) return word_at(col, 20, 8);
                     if (col == 24) return 58;
                     if (col >= 26 && col < 31) return uint_at(col, 26, (uint)max(selectedSlot, 0), 5);
@@ -337,7 +337,8 @@ Shader "Hidden/VRCFury/SpsDebugAutoInspector" {
                         (col >= 14 && col < 21) || (col >= 22 && col < 31);
                 }
                 if (row == 2) {
-                    return (col >= 1 && col < 31) || col == 33 || (col >= 34 && col <= 74);
+                    return (col >= 1 && col < 13) || (col >= 20 && col < 31) ||
+                        col == 33 || (col >= 34 && col <= 74);
                 }
                 return row >= 3 && row <= 13 && inspect_text_may_use_column(row, col);
             }

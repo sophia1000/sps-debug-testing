@@ -237,10 +237,10 @@ Shader "Hidden/VRCFury/SpsDebugCachedSlotTable" {
                 if (row == 1) {
                     if (col >= 1 && col < 5) return word_at(col, 1, 4);
                     if (col == 5) return 58;
-                    if (col >= 7 && col < 17) return uint_at(col, 7, count, UINT_W);
+                    if (col >= 7 && col < 10) return uint_at(col, 7, count, 3);
                     if (col >= 20 && col < 23) return word_at(col, 20, 5);
                     if (col == 23) return 58;
-                    if (col >= 25 && col < 35) return uint_at(col, 25, scan_result_limit(), UINT_W);
+                    if (col >= 25 && col < 28) return uint_at(col, 25, scan_result_limit(), 3);
                     if (col >= 38 && col < 42) return word_at(col, 38, 16);
                     if (col == 42) return 58;
                     if (col >= 44 && col < 49) return word_at(col, 44, 17);
@@ -248,11 +248,13 @@ Shader "Hidden/VRCFury/SpsDebugCachedSlotTable" {
                 if (row == 2) {
                     if (col >= 1 && col < 5) return word_at(col, 1, 19);
                     if (col == 5) return 58;
-                    if (col >= 6 && col < 16) return uint_at(col, 6, first, UINT_W);
-                    if (col == 16) return 45;
-                    if (col >= 17 && col < 27) return uint_at(col, 17, last, UINT_W);
-                    if (col == 27) return 47;
-                    if (col >= 29 && col < 39) return uint_at(col, 29, count, UINT_W);
+                    uint firstDisplay = count > 0u ? first + 1u : 0u;
+                    uint lastDisplay = count > 0u ? last + 1u : 0u;
+                    if (col >= 6 && col < 9) return uint_at(col, 6, firstDisplay, 3);
+                    if (col == 9) return 45;
+                    if (col >= 10 && col < 13) return uint_at(col, 10, lastDisplay, 3);
+                    if (col == 13) return 47;
+                    if (col >= 15 && col < 18) return uint_at(col, 15, count, 3);
                     if (col == 41) return 91;
                     if (col >= 42 && col < 82) return range_bar_char(col, 42, 40, count, rows, first, last);
                     if (col == 82) return 93;
@@ -326,8 +328,9 @@ Shader "Hidden/VRCFury/SpsDebugCachedSlotTable" {
 
             bool possible_text_cell(int row, int col) {
                 if (row == 0) return (col >= 1 && col < 23);
-                if (row == 1) return (col >= 1 && col < 49);
-                if (row == 2) return (col >= 1 && col < 39) || col == 41 || (col >= 42 && col <= 82);
+                if (row == 1) return (col >= 1 && col < 10) || (col >= 20 && col < 28) ||
+                    (col >= 38 && col < 49);
+                if (row == 2) return (col >= 1 && col < 18) || col == 41 || (col >= 42 && col <= 82);
                 if (row == 3) {
                     return (col >= 1 && col < 6) || (col >= 11 && col < 13) ||
                         (col >= 22 && col < 26) || (col >= 33 && col < 38) ||
